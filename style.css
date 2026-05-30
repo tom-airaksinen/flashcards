@@ -301,10 +301,12 @@ body {
 .train-footer {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+  gap: 6px;
+  margin-top: 14px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  opacity: 0.4;
 }
 .train-footer .hint-row { display: flex; justify-content: space-around; }
 .train-footer .hint-down { justify-content: center; }
