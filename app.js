@@ -63,26 +63,32 @@ function saveSRS() {
   localStorage.setItem(SRS_KEY, JSON.stringify(srs));
 }
 
-function srsKey(cardId, dir) {
-  return `${cardId}:${dir}`;
+// SRS nycklas på ORDET (utländskt + svenska), inte på kort-ID:t. Då delar samma ord
+// sin inlärning mellan lektioner. Olika översättning = olika nyckel, så homonymer
+// (t.ex. "tra/fra" = om / mellan) hålls isär eftersom baksidan skiljer sig.
+function normPart(s) {
+  return (s || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+function srsKey(card, dir) {
+  return `${normPart(card.front)}|${normPart(card.back)}|${dir}`;
 }
 
-function getEntry(cardId, dir) {
-  const k = srsKey(cardId, dir);
+function getEntry(card, dir) {
+  const k = srsKey(card, dir);
   if (!srs[k]) srs[k] = { box: 0, due: 0, lastSeen: 0 };
   return srs[k];
 }
 
 // "Dags att öva" = introducerade ord (låda ≥ 1) vars datum passerat.
 // Nya, aldrig tränade ord (låda 0) räknas inte – dem lär man in i lektionen.
-function isDue(cardId, dir, now) {
-  const e = getEntry(cardId, dir);
+function isDue(card, dir, now) {
+  const e = getEntry(card, dir);
   return e.box >= 1 && e.due <= now;
 }
 
-// grade: "fail" | "good" | "easy"
-function gradeCard(cardId, dir, grade) {
-  const e = getEntry(cardId, dir);
+// grade: "fail" | "good" | "easy" | "hard"
+function gradeCard(card, dir, grade) {
+  const e = getEntry(card, dir);
   const now = Date.now();
   if (grade === "fail" || grade === "hard") {
     e.box = 1;
@@ -94,6 +100,30 @@ function gradeCard(cardId, dir, grade) {
   }
   e.lastSeen = now;
   saveSRS();
+}
+
+// Migrera gammal statistik (nycklad på kort-ID "cardId:dir") till ordnyckeln.
+// Idempotent: kör säkert flera ggr; behåller starkaste posten vid krock.
+const SRS_MIGRATED_KEY = "flippa-srs-keyed-by-word";
+function migrateSrsKeys(contentArr) {
+  let changed = false;
+  contentArr.forEach((s) =>
+    s.lessons.forEach((l) =>
+      l.cards.forEach((c) => {
+        ["f2b", "b2f"].forEach((dir) => {
+          const old = srs[`${c.id}:${dir}`];
+          if (!old || !(old.box > 0 || old.due > 0)) return;
+          const k = srsKey(c, dir);
+          const cur = srs[k];
+          if (!cur || (old.box || 0) > (cur.box || 0)) {
+            srs[k] = { box: old.box || 0, due: old.due || 0, lastSeen: old.lastSeen || 0 };
+            changed = true;
+          }
+        });
+      })
+    )
+  );
+  if (changed) saveSRS();
 }
 
 // =========================================================================
@@ -175,6 +205,10 @@ function listenContent() {
         return;
       }
       content = normalize(val);
+      if (!localStorage.getItem(SRS_MIGRATED_KEY)) {
+        migrateSrsKeys(content);
+        localStorage.setItem(SRS_MIGRATED_KEY, "1");
+      }
       cacheContent(content);
       showStatus(null);
       renderCurrentScreen();
@@ -272,7 +306,7 @@ function dueCountForLessons(lessons) {
   let n = 0;
   lessons.forEach((l) =>
     l.cards.forEach((c) => {
-      if (isDue(c.id, "f2b", now) || isDue(c.id, "b2f", now)) n++;
+      if (isDue(c, "f2b", now) || isDue(c, "b2f", now)) n++;
     })
   );
   return n;
@@ -375,7 +409,7 @@ function startLessonSession(lessonId) {
   if (!lesson || !lesson.cards.length) return;
   const dirMode = dirSelect.value;
   // svagast först (lägsta låda), men slumpad ordning inom samma låda
-  const minBox = (c) => Math.min(getEntry(c.id, "f2b").box || 0, getEntry(c.id, "b2f").box || 0);
+  const minBox = (c) => Math.min(getEntry(c, "f2b").box || 0, getEntry(c, "b2f").box || 0);
   const ordered = [...lesson.cards]
     .map((c) => ({ c, box: minBox(c), r: Math.random() }))
     .sort((a, b) => a.box - b.box || a.r - b.r)
@@ -394,12 +428,12 @@ function startDueSession() {
   const due = [];
   currentSubject.lessons.forEach((l) =>
     l.cards.forEach((c) => {
-      if (isDue(c.id, "f2b", now) || isDue(c.id, "b2f", now)) due.push(c);
+      if (isDue(c, "f2b", now) || isDue(c, "b2f", now)) due.push(c);
     })
   );
   if (!due.length) return;
-  due.sort((a, b) => Math.min(getEntry(a.id, "f2b").due, getEntry(a.id, "b2f").due) -
-    Math.min(getEntry(b.id, "f2b").due, getEntry(b.id, "b2f").due));
+  due.sort((a, b) => Math.min(getEntry(a, "f2b").due, getEntry(a, "b2f").due) -
+    Math.min(getEntry(b, "f2b").due, getEntry(b, "b2f").due));
   const lim = sessionLimit();
   const queue = lim ? due.slice(0, lim) : due;
   const note = lim && due.length > queue.length
@@ -479,14 +513,14 @@ function answer(grade) {
   // man först bommade ligger kvar lågt och kommer oftare än ett man kunde direkt.
   const key = c.id + ":" + dir;
   if (!session.graded.has(key)) {
-    gradeCard(c.id, dir, grade);
+    gradeCard(c, dir, grade);
     session.graded.add(key);
     // Ett LYCKAT svar räknas som repetition även för andra riktningen:
     // är den introducerad och förfallen, skjut fram datumet (behåll lådan)
     // så att ett tränat ord försvinner helt från "Dags att öva".
     if (grade === "good" || grade === "easy") {
       const otherDir = dir === "f2b" ? "b2f" : "f2b";
-      const oe = getEntry(c.id, otherDir);
+      const oe = getEntry(c, otherDir);
       const now = Date.now();
       if (oe.box >= 1 && oe.due <= now) {
         oe.due = now + BOX_INTERVALS[oe.box] * DAY_MS;
@@ -936,7 +970,7 @@ function currentForeignLabel() {
 
 const sortCollator = new Intl.Collator("sv", { sensitivity: "base" });
 function weakKey(c, dir) {
-  const e = getEntry(c.id, dir);
+  const e = getEntry(c, dir);
   return (e.box || 0) * 1e15 + (e.due || 0); // lägst låda (svagast) först
 }
 function sortedCards(lesson) {
@@ -1244,6 +1278,7 @@ function openImport() {
     let n = 0;
     for (const k in imported) { srs[k] = imported[k]; n++; }
     saveSRS();
+    migrateSrsKeys(content); // konvertera ev. gammal ID-nycklad backup till ordnyckel
     if (obj.sessionLimit != null) {
       localStorage.setItem(SESSION_LIMIT_KEY, String(obj.sessionLimit));
       sessionLimitSel.value = String(obj.sessionLimit);
@@ -1266,7 +1301,7 @@ $("menu-btn").onclick = async () => {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v24";
+const APP_VERSION = "v25";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
