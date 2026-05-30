@@ -13,6 +13,7 @@ Ren HTML/CSS/JS – inga ramverk eller byggsteg. Innehåll i Firebase, statistik
 - **Full redigering från mobilen:** skapa/byt namn/ta bort ämnen, lektioner & ord
 - **Snabbinmatning:** klistra in flera ord på formatet `utländskt;svenskt`
 - **Uttal:** 🔊-knapp läser upp det utländska ordet (Web Speech API, språk per ämne)
+- **Översättning:** slå upp ord åt båda håll (MyMemory, gratis) och lägg till i vald/ny lektion
 - **Synk & backup:** innehåll i Firebase (delas mellan enheter), SRS-statistik i localStorage per enhet (ingen inloggning)
 - **Offline:** service worker cachar appen + senaste innehållet
 

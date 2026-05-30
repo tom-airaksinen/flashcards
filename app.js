@@ -750,6 +750,12 @@ function removeSubject(sid) {
 function addLesson(sid, name) {
   db.ref(`content/subjects/${sid}/lessons`).push({ name, order: Date.now(), createdAt: TS }).catch(writeError);
 }
+// Skapar lektion och returnerar dess nyckel direkt (för att kunna lägga kort i den på en gång)
+function createLessonReturning(sid, name) {
+  const ref = db.ref(`content/subjects/${sid}/lessons`).push({ name, order: Date.now(), createdAt: TS });
+  ref.then(undefined, writeError);
+  return ref.key;
+}
 function renameLesson(sid, lid, name) {
   db.ref(`content/subjects/${sid}/lessons/${lid}/name`).set(name).catch(writeError);
 }
@@ -879,6 +885,115 @@ $("add-words").onclick = async () => {
   await addCards(currentSubject.id, lesson.id, cards);
   flash(`La till ${cards.length} ord ✓`, 2000);
 };
+
+// =========================================================================
+//  Översättning (MyMemory) + lägg till
+// =========================================================================
+async function doTranslate(text, fromCode, toCode) {
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromCode}|${toCode}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  const d = await r.json();
+  const status = d.responseStatus;
+  if (status && String(status) !== "200") throw new Error(d.responseDetails || ("status " + status));
+  return (d.responseData && d.responseData.translatedText) || "";
+}
+
+function openTranslate(defaultLessonId) {
+  if (!currentSubject) return;
+  const fullLang = subjectLang(currentSubject);
+  const foreignCode = fullLang.slice(0, 2);
+  if (!foreignCode) {
+    flash("Sätt ett språk på ämnet först (redigera ämnet ✎)", 4000);
+    return;
+  }
+  const foreignLabel = (LANG_OPTIONS.find((o) => o.code === fullLang) || {}).label || "Utländska";
+  let dir = "sv2for";
+
+  const lessonOpts = currentSubject.lessons
+    .map((l) => `<option value="${l.id}" ${l.id === defaultLessonId ? "selected" : ""}>${esc(l.name)}</option>`)
+    .join("");
+
+  const m = openModal(`
+    <h3>Slå upp ord</h3>
+    <div class="seg" id="t-dir">
+      <button data-dir="sv2for" class="seg-on">Svenska → ${esc(foreignLabel)}</button>
+      <button data-dir="for2sv">${esc(foreignLabel)} → Svenska</button>
+    </div>
+    <label id="t-src-label">Svenska</label>
+    <div class="t-row">
+      <input type="text" id="t-src" autocomplete="off" placeholder="t.ex. blomkål" />
+      <button class="btn-secondary t-lookup" id="t-lookup">🔎</button>
+    </div>
+    <label id="t-dst-label">${esc(foreignLabel)}</label>
+    <input type="text" id="t-dst" autocomplete="off" placeholder="översättning (redigerbar)" />
+    <label>Lägg till i</label>
+    <select id="t-lesson">${lessonOpts}<option value="__new__">➕ Ny lektion…</option></select>
+    <input type="text" id="t-newlesson" class="hidden" placeholder="Namn på ny lektion" autocomplete="off" />
+    <div class="modal-actions">
+      <button class="btn-secondary" id="m-cancel">Stäng</button>
+      <button class="btn-primary" id="t-add">Lägg till</button>
+    </div>
+    <p class="modal-hint">Översättning via MyMemory – kontrollera & justera vid behov.</p>`);
+
+  const srcI = m.querySelector("#t-src");
+  const dstI = m.querySelector("#t-dst");
+  const lessonSel = m.querySelector("#t-lesson");
+  const newLessonI = m.querySelector("#t-newlesson");
+  srcI.focus();
+
+  if (!currentSubject.lessons.length) {
+    lessonSel.value = "__new__";
+    newLessonI.classList.remove("hidden");
+  }
+
+  function applyDir() {
+    m.querySelectorAll("#t-dir button").forEach((b) => b.classList.toggle("seg-on", b.dataset.dir === dir));
+    const sv = dir === "sv2for";
+    m.querySelector("#t-src-label").textContent = sv ? "Svenska" : foreignLabel;
+    m.querySelector("#t-dst-label").textContent = sv ? foreignLabel : "Svenska";
+    srcI.placeholder = sv ? "t.ex. blomkål" : "t.ex. cavolfiore";
+  }
+  m.querySelectorAll("#t-dir button").forEach((b) => (b.onclick = () => { dir = b.dataset.dir; applyDir(); }));
+
+  lessonSel.onchange = () => newLessonI.classList.toggle("hidden", lessonSel.value !== "__new__");
+
+  async function lookup() {
+    const text = srcI.value.trim();
+    if (!text) return;
+    const [from, to] = dir === "sv2for" ? ["sv", foreignCode] : [foreignCode, "sv"];
+    dstI.value = "…";
+    try {
+      dstI.value = await doTranslate(text, from, to);
+    } catch (e) {
+      dstI.value = "";
+      flash("Översättning misslyckades: " + e.message, 4000);
+    }
+  }
+  m.querySelector("#t-lookup").onclick = lookup;
+  srcI.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); lookup(); } });
+
+  m.querySelector("#m-cancel").onclick = closeModal;
+  m.querySelector("#t-add").onclick = () => {
+    const src = srcI.value.trim();
+    const dst = dstI.value.trim();
+    if (!src || !dst) { flash("Fyll i båda fälten (slå upp eller skriv själv)"); return; }
+    const front = dir === "sv2for" ? dst : src; // front = utländskt
+    const back = dir === "sv2for" ? src : dst;   // back = svenska
+    let lessonId = lessonSel.value;
+    if (lessonId === "__new__") {
+      const name = newLessonI.value.trim();
+      if (!name) { flash("Ange namn på den nya lektionen"); return; }
+      lessonId = createLessonReturning(currentSubject.id, name);
+    }
+    addCards(currentSubject.id, lessonId, [{ front, back }]);
+    flash(`La till "${front}" ✓`, 2000);
+    closeModal();
+  };
+}
+
+$("translate-subject").onclick = () => openTranslate(null);
+$("translate-words").onclick = () => openTranslate(currentLessonId);
 
 // =========================================================================
 //  PWA + start
