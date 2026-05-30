@@ -412,6 +412,7 @@ function beginSession({ queue, dirMode, label, note }) {
   session = { queue: queue.slice(), dirMode, total: queue.length, done: 0, label, note: note || "", graded: new Set() };
   show("training");
   activeScreen = "training";
+  updateAutospeakRow();
   loadCard();
 }
 
@@ -521,7 +522,6 @@ const speakBtn = $("speak-btn");
 const AUTO_SPEAK_KEY = "flippa-autospeak";
 let autoSpeak = localStorage.getItem(AUTO_SPEAK_KEY) === "1";
 function saveAutoSpeak() { localStorage.setItem(AUTO_SPEAK_KEY, autoSpeak ? "1" : "0"); }
-function updateSpeakBtnState() { speakBtn.classList.toggle("auto", autoSpeak); }
 
 function speak(text, lang) {
   if (!text || !("speechSynthesis" in window)) return;
@@ -581,52 +581,25 @@ function updateStack() {
   cardStack.classList.toggle("stack-0", n === 0);
 }
 
-// Aktivera autoläge: långtryck ELLER dubbeltapp. Enkeltapp = läs upp en gång / stäng av autoläge.
-let speakHoldTimer = null;
-let speakLongPressed = false;
-let lastTapTime = 0;
-let singleTapTimer = null;
-const DOUBLE_TAP_MS = 300;
+// Högtalaren på kortet: ett tryck = läs upp en gång (tryck flera ggr för att höra igen)
 function speakCurrent() {
   if (session && session.current) speak(session.current.front, subjectLang(currentSubject));
 }
-function enableAutoSpeak() {
-  autoSpeak = true;
+speakBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
+speakBtn.addEventListener("click", (e) => { e.stopPropagation(); speakCurrent(); });
+
+// Toggle "Automatisk uppläsning" längst ner – styr autoSpeak
+const autospeakRow = $("autospeak-row");
+const autospeakToggle = $("autospeak-toggle");
+autospeakToggle.checked = autoSpeak;
+autospeakToggle.addEventListener("change", () => {
+  autoSpeak = autospeakToggle.checked;
   saveAutoSpeak();
-  updateSpeakBtnState();
-  speakCurrent();
+});
+// Visa toggeln bara om ämnet har en röst på enheten
+function updateAutospeakRow() {
+  autospeakRow.classList.toggle("hidden", !hasVoiceFor(subjectLang(currentSubject)));
 }
-speakBtn.addEventListener("pointerdown", (e) => {
-  e.stopPropagation();
-  speakLongPressed = false;
-  speakHoldTimer = setTimeout(() => {
-    speakLongPressed = true;
-    clearTimeout(singleTapTimer); // hindra ev. fördröjd enkeltapp
-    enableAutoSpeak();
-  }, 500);
-});
-speakBtn.addEventListener("pointerup", (e) => { e.stopPropagation(); clearTimeout(speakHoldTimer); });
-speakBtn.addEventListener("pointercancel", () => clearTimeout(speakHoldTimer));
-speakBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  if (speakLongPressed) { speakLongPressed = false; return; } // långtryck redan hanterat
-  const now = Date.now();
-  if (now - lastTapTime < DOUBLE_TAP_MS) {
-    // dubbeltapp → aktivera autoläge
-    clearTimeout(singleTapTimer);
-    lastTapTime = 0;
-    enableAutoSpeak();
-    return;
-  }
-  lastTapTime = now;
-  // vänta in ev. andra tapp innan enkeltapp-åtgärden körs
-  clearTimeout(singleTapTimer);
-  singleTapTimer = setTimeout(() => {
-    if (autoSpeak) { autoSpeak = false; saveAutoSpeak(); updateSpeakBtnState(); }
-    else speakCurrent();
-  }, DOUBLE_TAP_MS);
-});
-updateSpeakBtnState();
 
 // Förladda röstlistan (laddas asynkront i vissa webbläsare)
 if ("speechSynthesis" in window) {
@@ -1253,7 +1226,7 @@ $("menu-btn").onclick = async () => {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v20";
+const APP_VERSION = "v21";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
