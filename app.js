@@ -1200,8 +1200,9 @@ $("menu-btn").onclick = async () => {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v17";
-$("version-tag").textContent = "Flippa " + APP_VERSION;
+const APP_VERSION = "v18";
+const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
+if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
 if ("serviceWorker" in navigator) {
   const hadController = !!navigator.serviceWorker.controller;
