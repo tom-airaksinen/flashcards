@@ -353,6 +353,17 @@ const feedbackEl = $("swipe-feedback");
 
 let session = null; // { queue:[card], dirMode, current, shownDir }
 
+// ---- Antal kort per pass ----
+const SESSION_LIMIT_KEY = "flashcards-session-limit";
+const sessionLimitSel = $("session-limit");
+sessionLimitSel.value = localStorage.getItem(SESSION_LIMIT_KEY) || "0";
+sessionLimitSel.addEventListener("change", () => {
+  localStorage.setItem(SESSION_LIMIT_KEY, sessionLimitSel.value);
+});
+function sessionLimit() {
+  return parseInt(sessionLimitSel.value, 10) || 0; // 0 = alla
+}
+
 function pickDir(dirMode) {
   if (dirMode === "f2b") return "f2b";
   if (dirMode === "b2f") return "b2f";
@@ -365,11 +376,16 @@ function startLessonSession(lessonId) {
   const dirMode = dirSelect.value;
   // svagast först (lägsta låda), men slumpad ordning inom samma låda
   const minBox = (c) => Math.min(getEntry(c.id, "f2b").box || 0, getEntry(c.id, "b2f").box || 0);
-  const queue = [...lesson.cards]
+  const ordered = [...lesson.cards]
     .map((c) => ({ c, box: minBox(c), r: Math.random() }))
     .sort((a, b) => a.box - b.box || a.r - b.r)
     .map((x) => x.c);
-  beginSession({ queue, dirMode, label: lesson.name });
+  const lim = sessionLimit();
+  const queue = lim ? ordered.slice(0, lim) : ordered;
+  const note = lim && ordered.length > queue.length
+    ? `Pass klart! 🎉 ${queue.length} av ${ordered.length} ord – resten kommer nästa pass.`
+    : "";
+  beginSession({ queue, dirMode, label: lesson.name, note });
 }
 
 function startDueSession() {
@@ -384,11 +400,16 @@ function startDueSession() {
   if (!due.length) return;
   due.sort((a, b) => Math.min(getEntry(a.id, "f2b").due, getEntry(a.id, "b2f").due) -
     Math.min(getEntry(b.id, "f2b").due, getEntry(b.id, "b2f").due));
-  beginSession({ queue: due, dirMode, label: "Dags att öva" });
+  const lim = sessionLimit();
+  const queue = lim ? due.slice(0, lim) : due;
+  const note = lim && due.length > queue.length
+    ? `Pass klart! 🎉 ${queue.length} av ${due.length} förfallna ord – resten kvar.`
+    : "";
+  beginSession({ queue, dirMode, label: "Dags att öva", note });
 }
 
-function beginSession({ queue, dirMode, label }) {
-  session = { queue: queue.slice(), dirMode, total: queue.length, done: 0, label, graded: new Set() };
+function beginSession({ queue, dirMode, label, note }) {
+  session = { queue: queue.slice(), dirMode, total: queue.length, done: 0, label, note: note || "", graded: new Set() };
   show("training");
   activeScreen = "training";
   loadCard();
@@ -417,7 +438,7 @@ function loadCard() {
 }
 
 function finishSession() {
-  $("congrats-sub").textContent = `${session ? session.label : ""} – klar! 🎉`;
+  $("congrats-sub").textContent = (session && session.note) || `${session ? session.label : ""} – klar! 🎉`;
   session = null;
   show("congrats");
   activeScreen = "congrats";
