@@ -276,6 +276,33 @@ body {
 #congrats-screen h2 { font-size: 1.6rem; }
 #congrats-sub { color: var(--muted); }
 #congrats-screen .primary-btn { margin-top: 12px; min-width: 160px; }
+.congrats-emoji { animation: congrats-pop 0.5s ease-out; }
+@keyframes congrats-pop {
+  0% { transform: scale(0.3); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ---- Konfetti ---- */
+.confetti-root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 200;
+}
+.confetti-root i {
+  position: absolute;
+  top: -24px;
+  border-radius: 2px;
+  animation-name: confetti-fall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+@keyframes confetti-fall {
+  0%   { opacity: 1; transform: translateY(-24px) translateX(0) rotate(0deg); }
+  100% { opacity: 1; transform: translateY(105vh) translateX(var(--drift)) rotate(var(--spin)); }
+}
 
 .editor-search {
   margin: 0 16px 10px;

@@ -73,8 +73,11 @@ function getEntry(cardId, dir) {
   return srs[k];
 }
 
+// "Dags att öva" = introducerade ord (låda ≥ 1) vars datum passerat.
+// Nya, aldrig tränade ord (låda 0) räknas inte – dem lär man in i lektionen.
 function isDue(cardId, dir, now) {
-  return getEntry(cardId, dir).due <= now;
+  const e = getEntry(cardId, dir);
+  return e.box >= 1 && e.due <= now;
 }
 
 // grade: "fail" | "good" | "easy"
@@ -418,6 +421,28 @@ function finishSession() {
   session = null;
   show("congrats");
   activeScreen = "congrats";
+  launchConfetti();
+}
+
+function launchConfetti() {
+  const colors = ["#5b8cff", "#5bbf72", "#f4c542", "#e05a4f", "#b06bf0", "#ff8fab"];
+  const root = document.createElement("div");
+  root.className = "confetti-root";
+  for (let i = 0; i < 90; i++) {
+    const p = document.createElement("i");
+    const size = 6 + Math.random() * 8;
+    p.style.cssText =
+      `left:${Math.random() * 100}vw;` +
+      `width:${size}px; height:${size * 0.6}px;` +
+      `background:${colors[i % colors.length]};` +
+      `animation-duration:${1.6 + Math.random() * 1.6}s;` +
+      `animation-delay:${Math.random() * 0.4}s;` +
+      `--drift:${(Math.random() * 2 - 1) * 140}px;` +
+      `--spin:${(Math.random() * 4 + 2) * 360}deg;`;
+    root.appendChild(p);
+  }
+  document.body.appendChild(root);
+  setTimeout(() => root.remove(), 4000);
 }
 
 function answer(grade) {
@@ -430,6 +455,16 @@ function answer(grade) {
   if (!session.graded.has(key)) {
     gradeCard(c.id, dir, grade);
     session.graded.add(key);
+    // Att öva ordet räknas som repetition även för andra riktningen:
+    // är den introducerad och förfallen, skjut fram datumet (behåll lådan)
+    // så att ett tränat ord försvinner helt från "Dags att öva".
+    const otherDir = dir === "f2b" ? "b2f" : "f2b";
+    const oe = getEntry(c.id, otherDir);
+    const now = Date.now();
+    if (oe.box >= 1 && oe.due <= now) {
+      oe.due = now + BOX_INTERVALS[oe.box] * DAY_MS;
+      saveSRS();
+    }
   }
   // ta bort från kön; vid fel läggs det tillbaka sist (oavsett SRS-räkning)
   session.queue.shift();
