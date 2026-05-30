@@ -434,7 +434,8 @@ function loadCard() {
   cardFront.textContent = showFrontFirst ? c.front : c.back;
   cardBack.textContent = showFrontFirst ? c.back : c.front;
   updateProgress();
-  updateSpeakBtn();
+  updateStack();
+  showSpeakSoon(300);
 }
 
 const DONE_LABELS = ["Grymt!", "Nice!", "Hell yeah!", "Snyggt!", "Kanon!", "Toppen!", "Bra jobbat!", "Yes!", "Så ska det se ut!", "Mästerligt!"];
@@ -548,6 +549,22 @@ function updateSpeakBtn() {
   speakBtn.classList.toggle("hidden", !ok);
 }
 
+// Dölj knappen direkt och visa den först när animationen (flipp/emerge) är klar
+function showSpeakSoon(delay) {
+  speakBtn.classList.add("hidden");
+  setTimeout(updateSpeakBtn, delay);
+}
+
+// Stacken speglar antal kort kvar UNDER det aktiva: 2+ → två, 1 → ett, sista → inga
+const cardStack = document.querySelector(".card-stack");
+function updateStack() {
+  const under = session ? Math.max(0, session.queue.length - 1) : 0;
+  const n = under >= 2 ? 2 : under;
+  cardStack.classList.toggle("stack-2", n === 2);
+  cardStack.classList.toggle("stack-1", n === 1);
+  cardStack.classList.toggle("stack-0", n === 0);
+}
+
 speakBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
 speakBtn.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -598,7 +615,7 @@ function flyOut(grade) {
 card.addEventListener("click", () => {
   if (didSwipe || animating) return;
   card.classList.toggle("flipped");
-  updateSpeakBtn();
+  showSpeakSoon(460);
 });
 
 card.addEventListener("pointerdown", (e) => {

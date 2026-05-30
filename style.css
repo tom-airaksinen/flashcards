@@ -189,16 +189,20 @@ body {
 }
 .card-stack { width: 100%; max-width: 380px; aspect-ratio: 3 / 4; position: relative; }
 
-/* Kort i högen bakom det aktiva */
+/* Kort i högen bakom det aktiva – antal styrs av klass på .card-stack */
 .card-stack::before, .card-stack::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: 20px;
   box-shadow: 0 8px 22px rgba(0,0,0,0.35);
+  display: none;
 }
 .card-stack::before { background: #1a1d24; transform: rotate(-4deg) translateY(6px); z-index: 0; }
 .card-stack::after  { background: #232833; transform: rotate(3deg) translateY(3px); z-index: 1; }
+/* 2+ kort kvar under: visa båda. 1 kvar: visa bara det närmaste. Sista: inga. */
+.card-stack.stack-2::before, .card-stack.stack-2::after { display: block; }
+.card-stack.stack-1::after { display: block; }
 
 #speak-btn {
   position: absolute;
@@ -215,8 +219,10 @@ body {
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(4px);
+  animation: speak-fade 0.2s ease-out;
 }
 #speak-btn:active { background: var(--accent); }
+@keyframes speak-fade { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
 
 .card {
   position: relative;
