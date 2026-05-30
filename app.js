@@ -36,10 +36,11 @@ const LANG_OPTIONS = [
   { label: "Spanska", code: "es-ES" },
   { label: "Engelska", code: "en-GB" },
   { label: "Portugisiska", code: "pt-PT" },
+  { label: "Ukrainska", code: "uk-UA" },
 ];
 const LANG_GUESS = {
   italienska: "it-IT", tyska: "de-DE", franska: "fr-FR",
-  spanska: "es-ES", engelska: "en-GB", portugisiska: "pt-PT",
+  spanska: "es-ES", engelska: "en-GB", portugisiska: "pt-PT", ukrainska: "uk-UA",
 };
 // Returnerar ämnets språkkod (explicit fält, annars gissning från namnet)
 function subjectLang(s) {
@@ -473,8 +474,18 @@ function foreignVisible() {
   return session.shownDir === "f2b" ? !flipped : flipped;
 }
 
+// Finns en röst för språket på den här enheten? (okänt = visa hellre)
+function hasVoiceFor(lang) {
+  if (!lang || !("speechSynthesis" in window)) return false;
+  const voices = speechSynthesis.getVoices();
+  if (!voices.length) return true; // röstlistan ej laddad än
+  const p = lang.slice(0, 2);
+  return voices.some((v) => v.lang.replace("_", "-").slice(0, 2) === p);
+}
+
 function updateSpeakBtn() {
-  const ok = !!subjectLang(currentSubject) && foreignVisible() && "speechSynthesis" in window;
+  const lang = subjectLang(currentSubject);
+  const ok = !!lang && foreignVisible() && hasVoiceFor(lang);
   speakBtn.classList.toggle("hidden", !ok);
 }
 
@@ -487,7 +498,7 @@ speakBtn.addEventListener("click", (e) => {
 // Förladda röstlistan (laddas asynkront i vissa webbläsare)
 if ("speechSynthesis" in window) {
   speechSynthesis.getVoices();
-  speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+  speechSynthesis.onvoiceschanged = () => { speechSynthesis.getVoices(); updateSpeakBtn(); };
 }
 
 // =========================================================================
