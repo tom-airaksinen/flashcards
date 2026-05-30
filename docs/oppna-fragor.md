@@ -32,4 +32,7 @@
 
 ## Projekt & drift
 - [x] Repo-namn på privata GitHub-kontot? → **Svar:** "flashcards" (lokal mapp heter "glosappen" – får skilja sig) (2026-05-30)
-- [ ] Egen ikon till hemskärmen (motsvarande ⚽ i fotbollsappen)?
+- [x] Publikt eller privat repo? → **Svar:** Publikt (gratis Pages, inget känsligt i koden; privat kräver GitHub Pro) (2026-05-30)
+- [x] Deploy? → **Svar:** GitHub Pages, live på https://tom-airaksinen.github.io/flashcards/ (2026-05-30)
+- [x] Egen ikon till hemskärmen? → **Svar:** Ja, neutral kort-stack-ikon (icon.svg → 192/512 px) (2026-05-30)
+- [ ] Om anonym inloggning skulle fela på github.io: lägg ev. till domänen under Firebase Auth → Settings → Authorized domains.
