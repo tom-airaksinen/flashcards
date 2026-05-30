@@ -517,6 +517,12 @@ function showFeedback(grade) {
 // =========================================================================
 const speakBtn = $("speak-btn");
 
+// Autoläge: läs upp automatiskt varje gång den utländska sidan visas
+const AUTO_SPEAK_KEY = "flippa-autospeak";
+let autoSpeak = localStorage.getItem(AUTO_SPEAK_KEY) === "1";
+function saveAutoSpeak() { localStorage.setItem(AUTO_SPEAK_KEY, autoSpeak ? "1" : "0"); }
+function updateSpeakBtnState() { speakBtn.classList.toggle("auto", autoSpeak); }
+
 function speak(text, lang) {
   if (!text || !("speechSynthesis" in window)) return;
   const u = new SpeechSynthesisUtterance(text);
@@ -556,7 +562,13 @@ function updateSpeakBtn() {
 // Dölj knappen direkt och visa den först när animationen (flipp/emerge) är klar
 function showSpeakSoon(delay) {
   speakBtn.classList.add("hidden");
-  setTimeout(updateSpeakBtn, delay);
+  setTimeout(() => {
+    updateSpeakBtn();
+    // autoläge: läs upp så fort den utländska sidan blir synlig
+    if (autoSpeak && session && session.current && foreignVisible() && hasVoiceFor(subjectLang(currentSubject))) {
+      speak(session.current.front, subjectLang(currentSubject));
+    }
+  }, delay);
 }
 
 // Stacken speglar antal kort kvar UNDER det aktiva: 2+ → två, 1 → ett, sista → inga
@@ -569,11 +581,32 @@ function updateStack() {
   cardStack.classList.toggle("stack-0", n === 0);
 }
 
-speakBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
+// Långtryck = aktivera autoläge, enkeltryck = läs upp en gång (eller stäng av autoläge)
+let speakHoldTimer = null;
+let speakLongPressed = false;
+function speakCurrent() {
+  if (session && session.current) speak(session.current.front, subjectLang(currentSubject));
+}
+speakBtn.addEventListener("pointerdown", (e) => {
+  e.stopPropagation();
+  speakLongPressed = false;
+  speakHoldTimer = setTimeout(() => {
+    speakLongPressed = true;
+    autoSpeak = true;
+    saveAutoSpeak();
+    updateSpeakBtnState();
+    speakCurrent();
+  }, 500);
+});
+speakBtn.addEventListener("pointerup", (e) => { e.stopPropagation(); clearTimeout(speakHoldTimer); });
+speakBtn.addEventListener("pointercancel", () => clearTimeout(speakHoldTimer));
 speakBtn.addEventListener("click", (e) => {
   e.stopPropagation();
-  if (session && session.current) speak(session.current.front, subjectLang(currentSubject));
+  if (speakLongPressed) { speakLongPressed = false; return; } // långtryck redan hanterat
+  if (autoSpeak) { autoSpeak = false; saveAutoSpeak(); updateSpeakBtnState(); }
+  else speakCurrent();
 });
+updateSpeakBtnState();
 
 // Förladda röstlistan (laddas asynkront i vissa webbläsare)
 if ("speechSynthesis" in window) {
@@ -604,7 +637,7 @@ function flyOut(grade) {
   const cls = grade === "good" ? "fly-right" : grade === "easy" ? "fly-up" : grade === "hard" ? "fly-down" : "fly-left";
   card.classList.add(cls);
   setTimeout(() => {
-    card.classList.remove("fly-right", "fly-left", "fly-up");
+    card.classList.remove("fly-right", "fly-left", "fly-up", "fly-down");
     card.style.transform = "";
     answer(grade);
     card.classList.add("emerge");
@@ -1200,7 +1233,7 @@ $("menu-btn").onclick = async () => {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v18";
+const APP_VERSION = "v19";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
