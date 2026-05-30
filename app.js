@@ -443,6 +443,9 @@ function startDueSession() {
 }
 
 function beginSession({ queue, dirMode, label, note }) {
+  // nollställ ev. kvarvarande svep-feedback så den inte blinkar till vid sessionsstart
+  feedbackEl.classList.remove("show");
+  feedbackEl.textContent = "";
   session = { queue: queue.slice(), dirMode, total: queue.length, done: 0, label, note: note || "", graded: new Set() };
   show("training");
   activeScreen = "training";
@@ -1301,7 +1304,7 @@ $("menu-btn").onclick = async () => {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v25";
+const APP_VERSION = "v26";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
