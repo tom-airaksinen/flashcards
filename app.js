@@ -581,21 +581,28 @@ function updateStack() {
   cardStack.classList.toggle("stack-0", n === 0);
 }
 
-// Långtryck = aktivera autoläge, enkeltryck = läs upp en gång (eller stäng av autoläge)
+// Aktivera autoläge: långtryck ELLER dubbeltapp. Enkeltapp = läs upp en gång / stäng av autoläge.
 let speakHoldTimer = null;
 let speakLongPressed = false;
+let lastTapTime = 0;
+let singleTapTimer = null;
+const DOUBLE_TAP_MS = 300;
 function speakCurrent() {
   if (session && session.current) speak(session.current.front, subjectLang(currentSubject));
+}
+function enableAutoSpeak() {
+  autoSpeak = true;
+  saveAutoSpeak();
+  updateSpeakBtnState();
+  speakCurrent();
 }
 speakBtn.addEventListener("pointerdown", (e) => {
   e.stopPropagation();
   speakLongPressed = false;
   speakHoldTimer = setTimeout(() => {
     speakLongPressed = true;
-    autoSpeak = true;
-    saveAutoSpeak();
-    updateSpeakBtnState();
-    speakCurrent();
+    clearTimeout(singleTapTimer); // hindra ev. fördröjd enkeltapp
+    enableAutoSpeak();
   }, 500);
 });
 speakBtn.addEventListener("pointerup", (e) => { e.stopPropagation(); clearTimeout(speakHoldTimer); });
@@ -603,8 +610,21 @@ speakBtn.addEventListener("pointercancel", () => clearTimeout(speakHoldTimer));
 speakBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   if (speakLongPressed) { speakLongPressed = false; return; } // långtryck redan hanterat
-  if (autoSpeak) { autoSpeak = false; saveAutoSpeak(); updateSpeakBtnState(); }
-  else speakCurrent();
+  const now = Date.now();
+  if (now - lastTapTime < DOUBLE_TAP_MS) {
+    // dubbeltapp → aktivera autoläge
+    clearTimeout(singleTapTimer);
+    lastTapTime = 0;
+    enableAutoSpeak();
+    return;
+  }
+  lastTapTime = now;
+  // vänta in ev. andra tapp innan enkeltapp-åtgärden körs
+  clearTimeout(singleTapTimer);
+  singleTapTimer = setTimeout(() => {
+    if (autoSpeak) { autoSpeak = false; saveAutoSpeak(); updateSpeakBtnState(); }
+    else speakCurrent();
+  }, DOUBLE_TAP_MS);
 });
 updateSpeakBtnState();
 
@@ -1233,7 +1253,7 @@ $("menu-btn").onclick = async () => {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v19";
+const APP_VERSION = "v20";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
