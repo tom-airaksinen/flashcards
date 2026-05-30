@@ -338,15 +338,12 @@ function startLessonSession(lessonId) {
   const lesson = currentSubject.lessons.find((l) => l.id === lessonId);
   if (!lesson || !lesson.cards.length) return;
   const dirMode = dirSelect.value;
-  // svagast först: lägsta låda (ny/fel) först, sen efter förfallodatum
-  const score = (c) => {
-    const ef = getEntry(c.id, "f2b");
-    const eb = getEntry(c.id, "b2f");
-    const box = Math.min(ef.box || 0, eb.box || 0);
-    const due = Math.min(ef.due, eb.due);
-    return box * 1e15 + due;
-  };
-  const queue = [...lesson.cards].sort((a, b) => score(a) - score(b));
+  // svagast först (lägsta låda), men slumpad ordning inom samma låda
+  const minBox = (c) => Math.min(getEntry(c.id, "f2b").box || 0, getEntry(c.id, "b2f").box || 0);
+  const queue = [...lesson.cards]
+    .map((c) => ({ c, box: minBox(c), r: Math.random() }))
+    .sort((a, b) => a.box - b.box || a.r - b.r)
+    .map((x) => x.c);
   beginSession({ queue, dirMode, label: lesson.name });
 }
 
