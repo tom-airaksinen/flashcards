@@ -918,11 +918,50 @@ async function editSubject(sid) {
 const editorSearch = $("editor-search");
 editorSearch.addEventListener("input", () => { if (activeScreen === "editor") renderEditor(); });
 
+let editorSort = "added"; // added | front-az | back-az | weak-front | weak-back
+
 function openEditor(lessonId) {
   currentLessonId = lessonId;
   editorSearch.value = ""; // nollställ filter vid byte av lektion
+  editorSort = "added";    // default-sortering
   renderEditor();
 }
+
+// Språknamn för sorteringsetiketter (gemener), t.ex. "italienska"
+function currentForeignLabel() {
+  const lang = subjectLang(currentSubject);
+  const opt = LANG_OPTIONS.find((o) => o.code === lang);
+  return opt && opt.code ? opt.label.toLowerCase() : "utländska";
+}
+
+const sortCollator = new Intl.Collator("sv", { sensitivity: "base" });
+function weakKey(c, dir) {
+  const e = getEntry(c.id, dir);
+  return (e.box || 0) * 1e15 + (e.due || 0); // lägst låda (svagast) först
+}
+function sortedCards(lesson) {
+  const cs = [...lesson.cards];
+  switch (editorSort) {
+    case "front-az": return cs.sort((a, b) => sortCollator.compare(a.front, b.front));
+    case "back-az": return cs.sort((a, b) => sortCollator.compare(a.back, b.back));
+    case "weak-front": return cs.sort((a, b) => weakKey(a, "f2b") - weakKey(b, "f2b"));
+    case "weak-back": return cs.sort((a, b) => weakKey(a, "b2f") - weakKey(b, "b2f"));
+    default: return cs.sort(byOrder);
+  }
+}
+
+$("sort-btn").onclick = async () => {
+  const fl = currentForeignLabel();
+  const opts = [
+    { label: "Först tillagda", value: "added" },
+    { label: `Alfabetiskt ${fl}`, value: "front-az" },
+    { label: "Alfabetiskt svenska", value: "back-az" },
+    { label: `Svagast från ${fl}`, value: "weak-front" },
+    { label: "Svagast från svenska", value: "weak-back" },
+  ].map((o) => ({ ...o, label: (o.value === editorSort ? "✓ " : "") + o.label }));
+  const choice = await actionSheet("Sortera", opts);
+  if (choice) { editorSort = choice; renderEditor(); }
+};
 
 function getCurrentLesson() {
   if (!currentSubject) return null;
@@ -941,10 +980,11 @@ function renderEditor() {
     list.innerHTML = `<p class="empty">Inga ord än. Tryck ＋ Lägg till ord.</p>`;
     return;
   }
+  const sorted = sortedCards(lesson);
   const filter = (editorSearch.value || "").trim().toLowerCase();
   const cards = filter
-    ? lesson.cards.filter((c) => c.front.toLowerCase().includes(filter) || c.back.toLowerCase().includes(filter))
-    : lesson.cards;
+    ? sorted.filter((c) => c.front.toLowerCase().includes(filter) || c.back.toLowerCase().includes(filter))
+    : sorted;
   if (!cards.length) {
     list.innerHTML = `<p class="empty">Inga träffar på "${esc(filter)}".</p>`;
     return;
@@ -1226,7 +1266,7 @@ $("menu-btn").onclick = async () => {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v23";
+const APP_VERSION = "v24";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
