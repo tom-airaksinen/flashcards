@@ -1,4 +1,17 @@
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+/* Tillåt markering/redigering i inmatningsfält */
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
 
 :root {
   --bg: #15171c;
