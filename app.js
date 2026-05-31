@@ -314,6 +314,7 @@ function dueCountForLessons(lessons) {
 
 function renderLessons() {
   if (!currentSubject) return renderSubjects();
+  if (lessonDrag && lessonDrag.active) return; // rita inte om mitt i en drag-omordning
   // Plocka färsk referens (innehåll kan ha uppdaterats från Firebase)
   currentSubject = content.find((s) => s.id === currentSubject.id) || currentSubject;
   activeScreen = "lessons";
@@ -349,8 +350,10 @@ function renderLessons() {
   list.querySelectorAll(".row").forEach((row) => {
     row.addEventListener("click", (e) => {
       if (e.target.classList.contains("row-edit")) return;
+      if (suppressLessonClick) return; // precis avslutat en drag-omordning
       startLessonSession(row.dataset.lesson);
     });
+    row.addEventListener("pointerdown", (e) => onLessonPointerDown(e, row, list));
   });
   list.querySelectorAll(".row-edit").forEach((btn) => {
     btn.addEventListener("click", (e) => {
@@ -358,6 +361,104 @@ function renderLessons() {
       openEditor(btn.dataset.edit);
     });
   });
+}
+
+// ---- Drag & drop-ordning av lektioner (långtryck) ----
+let lessonDrag = null;
+let suppressLessonClick = false;
+
+function onLessonPointerDown(e, row, listEl) {
+  if (e.target.closest(".row-edit")) return;
+  if (e.button != null && e.button > 0) return;
+  const state = { row, listEl, pointerId: e.pointerId, startY: e.clientY, active: false };
+  lessonDrag = state;
+  state.moveHandler = (ev) => onLessonPointerMove(ev, state);
+  state.upHandler = (ev) => onLessonPointerUp(ev, state);
+  window.addEventListener("pointermove", state.moveHandler, { passive: false });
+  window.addEventListener("pointerup", state.upHandler);
+  window.addEventListener("pointercancel", state.upHandler);
+  state.holdTimer = setTimeout(() => beginLessonDrag(state), 420);
+}
+
+function cleanupLessonDrag(state) {
+  clearTimeout(state.holdTimer);
+  window.removeEventListener("pointermove", state.moveHandler);
+  window.removeEventListener("pointerup", state.upHandler);
+  window.removeEventListener("pointercancel", state.upHandler);
+  if (state.touchBlocker) document.removeEventListener("touchmove", state.touchBlocker);
+  if (lessonDrag === state) lessonDrag = null;
+}
+
+function beginLessonDrag(state) {
+  const rows = [...state.listEl.querySelectorAll(".row")];
+  state.rows = rows;
+  state.rects = rows.map((r) => r.getBoundingClientRect());
+  state.index = rows.indexOf(state.row);
+  if (state.index < 0) { cleanupLessonDrag(state); return; }
+  state.gap = state.rects[0].height + 10;
+  state.targetIndex = state.index;
+  state.active = true;
+  state.row.classList.add("dragging");
+  try { state.row.setPointerCapture(state.pointerId); } catch (e) {}
+  state.touchBlocker = (te) => te.preventDefault(); // stoppa sidans scroll under drag (iOS)
+  document.addEventListener("touchmove", state.touchBlocker, { passive: false });
+  if (navigator.vibrate) navigator.vibrate(12);
+}
+
+function onLessonPointerMove(ev, state) {
+  if (!state.active) {
+    if (Math.abs(ev.clientY - state.startY) > 8) cleanupLessonDrag(state); // rörde sig = scroll, avbryt
+    return;
+  }
+  ev.preventDefault();
+  const dy = ev.clientY - state.startY;
+  state.row.style.transform = `translateY(${dy}px) scale(1.03)`;
+  const draggedCenter = state.rects[state.index].top + state.rects[state.index].height / 2 + dy;
+  let newIndex = 0;
+  state.rects.forEach((r, i) => {
+    if (i === state.index) return;
+    if (r.top + r.height / 2 < draggedCenter) newIndex++;
+  });
+  state.targetIndex = newIndex;
+  state.rows.forEach((r, i) => {
+    if (i === state.index) return;
+    let shift = 0;
+    if (state.index < state.targetIndex && i > state.index && i <= state.targetIndex) shift = -state.gap;
+    else if (state.index > state.targetIndex && i >= state.targetIndex && i < state.index) shift = state.gap;
+    r.style.transform = shift ? `translateY(${shift}px)` : "";
+  });
+}
+
+function onLessonPointerUp(ev, state) {
+  if (!state.active) { cleanupLessonDrag(state); return; }
+  const fromIndex = state.index;
+  const toIndex = state.targetIndex;
+  state.rows.forEach((r) => (r.style.transform = ""));
+  state.row.classList.remove("dragging");
+  state.active = false;
+  cleanupLessonDrag(state);
+  suppressLessonClick = true;
+  setTimeout(() => (suppressLessonClick = false), 350);
+  if (fromIndex !== toIndex) {
+    const ids = currentSubject.lessons.map((l) => l.id);
+    const [moved] = ids.splice(fromIndex, 1);
+    ids.splice(toIndex, 0, moved);
+    persistLessonOrder(ids);
+  }
+}
+
+function persistLessonOrder(orderedIds) {
+  const subj = content.find((s) => s.id === currentSubject.id) || currentSubject;
+  orderedIds.forEach((id, i) => {
+    const les = subj.lessons.find((l) => l.id === id);
+    if (les) les.order = i;
+  });
+  subj.lessons.sort(byOrder);
+  currentSubject = subj;
+  renderLessons(); // optimistisk omritning
+  const updates = {};
+  orderedIds.forEach((id, i) => (updates[`${id}/order`] = i));
+  db.ref(`content/subjects/${subj.id}/lessons`).update(updates).catch(writeError);
 }
 
 // Back-knappar
@@ -1161,7 +1262,7 @@ function openTranslate(defaultLessonId) {
     m.querySelector("#t-dst-label").textContent = sv ? foreignLabel : "Svenska";
     srcI.placeholder = sv ? "t.ex. blomkål" : "t.ex. cavolfiore";
   }
-  m.querySelectorAll("#t-dir button").forEach((b) => (b.onclick = () => { dir = b.dataset.dir; applyDir(); }));
+  m.querySelectorAll("#t-dir button").forEach((b) => (b.onclick = () => { dir = b.dataset.dir; applyDir(); srcI.focus(); }));
 
   lessonSel.onchange = () => newLessonI.classList.toggle("hidden", lessonSel.value !== "__new__");
 
@@ -1304,7 +1405,7 @@ $("menu-btn").onclick = async () => {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v26";
+const APP_VERSION = "v27";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
