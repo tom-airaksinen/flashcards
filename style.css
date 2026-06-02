@@ -379,6 +379,8 @@ body {
   text-align: center;
   gap: 14px;
   padding: 24px;
+  position: relative;
+  z-index: 300; /* ovanför konfettin (z-index 200) så knapparna alltid är klickbara */
 }
 .congrats-emoji { font-size: 4rem; }
 #congrats-screen h2 { font-size: 1.6rem; }
