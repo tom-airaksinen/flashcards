@@ -506,7 +506,7 @@ function pickDir(dirMode) {
   return Math.random() < 0.5 ? "f2b" : "b2f";
 }
 
-function startLessonSession(lessonId) {
+async function startLessonSession(lessonId, force = false) {
   const lesson = currentSubject.lessons.find((l) => l.id === lessonId);
   if (!lesson || !lesson.cards.length) return;
   const dirMode = dirSelect.value;
@@ -517,9 +517,14 @@ function startLessonSession(lessonId) {
     dirMode === "f2b" ? getEntry(c, "f2b").due <= now
     : dirMode === "b2f" ? getEntry(c, "b2f").due <= now
     : (getEntry(c, "f2b").due <= now || getEntry(c, "b2f").due <= now);
-  const pool = lesson.cards.filter(activeToday);
+  const pool = force ? [...lesson.cards] : lesson.cards.filter(activeToday);
   if (!pool.length) {
-    flash(`Inget kvar att öva i "${lesson.name}" idag – allt inlärt ✅`, 3500);
+    const yes = await confirmPrimary(
+      "Inget kvar att öva idag",
+      `Du har redan lärt in alla ord i "${lesson.name}" idag. Köra igenom hela lektionen ändå?`,
+      "Kör ändå!"
+    );
+    if (yes) startLessonSession(lessonId, true);
     return;
   }
   // svagast först (lägsta låda), men slumpad ordning inom samma låda
@@ -533,7 +538,7 @@ function startLessonSession(lessonId) {
   const note = lim && ordered.length > queue.length
     ? `Pass klart! 🎉 ${queue.length} av ${ordered.length} ord – resten kommer nästa pass.`
     : "";
-  beginSession({ queue, dirMode, label: lesson.name, note, kind: "lesson", lessonId, continueLimit: (lim && ordered.length > queue.length) ? lim : 0 });
+  beginSession({ queue, dirMode, label: lesson.name, note, kind: "lesson", lessonId, forced: force, continueLimit: (lim && ordered.length > queue.length) ? lim : 0 });
 }
 
 function startDueSession() {
@@ -556,12 +561,12 @@ function startDueSession() {
   beginSession({ queue, dirMode, label: "Dags att öva", note, kind: "due", continueLimit: (lim && due.length > queue.length) ? lim : 0 });
 }
 
-function beginSession({ queue, dirMode, label, note, kind, lessonId, continueLimit }) {
+function beginSession({ queue, dirMode, label, note, kind, lessonId, forced, continueLimit }) {
   // nollställ ev. kvarvarande svep-feedback så den inte blinkar till vid sessionsstart
   feedbackEl.classList.remove("show");
   feedbackEl.textContent = "";
   session = { queue: queue.slice(), dirMode, total: queue.length, done: 0, label, note: note || "",
-              graded: new Set(), kind: kind || null, lessonId: lessonId || null, continueLimit: continueLimit || 0 };
+              graded: new Set(), kind: kind || null, lessonId: lessonId || null, forced: forced || false, continueLimit: continueLimit || 0 };
   show("training");
   activeScreen = "training";
   updateAutospeakRow();
@@ -595,7 +600,7 @@ function loadCard() {
 const DONE_LABELS = ["Grymt!", "Nice!", "Hell yeah!", "Snyggt!", "Kanon!", "Toppen!", "Bra jobbat!", "Yes!", "Så ska det se ut!", "Mästerligt!"];
 
 function finishSession() {
-  const cont = session ? { limit: session.continueLimit, kind: session.kind, lessonId: session.lessonId } : null;
+  const cont = session ? { limit: session.continueLimit, kind: session.kind, lessonId: session.lessonId, forced: session.forced } : null;
   $("congrats-sub").textContent = (session && session.note) || `${session ? session.label : ""} – klar! 🎉`;
   $("congrats-done").textContent = DONE_LABELS[Math.floor(Math.random() * DONE_LABELS.length)];
 
@@ -608,7 +613,7 @@ function finishSession() {
   if (showCont) {
     contBtn.textContent = `Fortsätt med ${cont.limit} till`;
     contBtn.classList.remove("hidden");
-    contBtn.onclick = () => (cont.kind === "due" ? startDueSession() : startLessonSession(cont.lessonId));
+    contBtn.onclick = () => (cont.kind === "due" ? startDueSession() : startLessonSession(cont.lessonId, cont.forced));
   } else {
     contBtn.classList.add("hidden");
   }
@@ -998,6 +1003,20 @@ function askWord(front, back) {
       closeModal();
       resolve(f && b ? { front: f, back: b } : null);
     };
+  });
+}
+
+function confirmPrimary(title, message, okLabel) {
+  return new Promise((resolve) => {
+    const m = openModal(`
+      <h3>${esc(title)}</h3>
+      <p class="modal-hint">${esc(message)}</p>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="m-cancel">Avbryt</button>
+        <button class="btn-primary" id="m-ok">${esc(okLabel)}</button>
+      </div>`);
+    m.querySelector("#m-cancel").onclick = () => { closeModal(); resolve(false); };
+    m.querySelector("#m-ok").onclick = () => { closeModal(); resolve(true); };
   });
 }
 
@@ -1470,7 +1489,7 @@ $("menu-btn").onclick = async () => {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v30";
+const APP_VERSION = "v31";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
