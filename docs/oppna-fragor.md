@@ -12,6 +12,7 @@
 - [x] Hur många utfall/gester? → **Svar:** Tre – 👈 kan inte (→låda 1), 👉 kan (+1 låda), 👆 kan väldigt bra (+2 lådor) (2026-05-30)
 - [ ] Exakta intervall per låda – startförslag i PLAN.md (idag/2/4/8/16/32 dgr), justeras efter känsla?
 - [ ] Behövs en "hoppa över idag/snooza" trots att uppåtgesten nu är "kan väldigt bra"?
+- [ ] Svårighets-/historik-minne per ord (leech)? → **Tanke:** ren Leitner är "minneslös" och minns inte att vissa ord alltid är svåra. Förfining (inte krock): räkna bommar/andel rätt per ord och låt det (a) visa en 🔥-indikator på sega ord och/eller (b) vara tiebreaker i "svagast först". Full SM-2 ease factor avråddes (binär-ish input + transparensförlust); 👇 hopplöst + Leitners självkorrigering räcker troligen. (Diskuterad 2026-06-02)
 
 ## Träningslägen
 - [x] Ett läge eller flera? → **Svar:** Två: (A) lektionsträning (cram, svagast först), (B) "Dags att öva" på ämnesnivå (förfallna idag, valbara lektioner). Samma motor. (2026-05-30)

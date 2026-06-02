@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Mockup – justera kort mitt i passet</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-user-select: none; }
+  :root {
+    --bg:#15171c; --surface:#1f232b; --surface-2:#272c36; --text:#f2f4f8;
+    --muted:#9aa3b2; --accent:#5b8cff; --good:#5bbf72; --easy:#f4c542;
+  }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; padding:18px 14px 60px; }
+  h1 { font-size:1.2rem; margin-bottom:4px; }
+  .lead { color:var(--muted); font-size:.9rem; margin-bottom:22px; line-height:1.4; }
+  .variant { background:var(--surface); border-radius:16px; padding:16px; margin-bottom:22px; }
+  .variant h2 { font-size:1rem; margin-bottom:4px; }
+  .variant p { color:var(--muted); font-size:.83rem; line-height:1.45; margin-bottom:14px; }
+  .pro { color:var(--good); } .con { color:#e0915a; }
+
+  /* mock train-bar */
+  .bar { display:flex; align-items:center; gap:8px; background:var(--bg); border-radius:12px; padding:10px; position:relative; }
+  .back { background:var(--surface-2); border:none; color:var(--text); width:34px; height:34px; border-radius:9px; font-size:1rem; }
+  .sel { flex:1; background:var(--surface-2); color:var(--text); border:none; border-radius:9px; padding:9px; font-size:.85rem; }
+  .pill { background:var(--surface-2); color:var(--muted); border:none; border-radius:9px; padding:8px 12px; font-size:.85rem; white-space:nowrap; }
+  .pill.tappable { color:var(--text); }
+  .iconbtn { background:var(--surface-2); border:none; color:var(--text); width:34px; height:34px; border-radius:9px; font-size:1rem; }
+
+  /* popover (A) */
+  .pop { margin-top:10px; background:var(--surface-2); border-radius:12px; padding:12px; }
+  .stepper { display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:10px; }
+  .stepper button { width:42px; height:42px; border-radius:50%; border:none; background:var(--bg); color:var(--text); font-size:1.4rem; }
+  .stepper .num { font-size:1.5rem; font-weight:700; min-width:44px; text-align:center; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; }
+  .chip { background:var(--bg); color:var(--text); border:none; border-radius:20px; padding:8px 14px; font-size:.85rem; }
+  .chip.accent { background:var(--accent); color:#fff; }
+  .chip.warn { background:transparent; color:#e0915a; border:1px solid #3a4150; }
+
+  /* sheet presets (B) */
+  .presets { display:flex; gap:8px; margin-top:10px; }
+  .presets button { flex:1; background:var(--surface-2); color:var(--text); border:none; border-radius:10px; padding:11px 0; font-size:.9rem; }
+  .presets button.on { background:var(--accent); color:#fff; }
+
+  /* inline stepper (C) */
+  .inline { display:flex; align-items:center; gap:6px; background:var(--surface-2); border-radius:9px; padding:4px 6px; }
+  .inline button { width:30px; height:30px; border-radius:7px; border:none; background:var(--bg); color:var(--text); font-size:1.1rem; }
+  .inline .n { min-width:54px; text-align:center; font-size:.82rem; color:var(--muted); }
+  .hint { font-size:.72rem; color:var(--muted); margin-top:8px; text-align:center; }
+</style>
+</head>
+<body>
+  <h1>Justera antal kort mitt i passet</h1>
+  <p class="lead">Tre förslag på hur man ändrar hur många kort som är kvar medan man kör en lektion. Tryck runt – de är lite interaktiva. Säg vilken du gillar (eller mix).</p>
+
+  <!-- VARIANT A -->
+  <div class="variant">
+    <h2>A — Tappbar "kvar"-pill + popover</h2>
+    <p>Tryck på <b>“8 kvar”</b> uppe till höger → en liten ruta med stegare och snabbval. <span class="pro">Kontextuellt, ingen permanent röra i fältet.</span></p>
+    <div class="bar">
+      <button class="back">←</button>
+      <select class="sel"><option>Från svenska</option></select>
+      <button class="pill tappable" id="aPill" onclick="document.getElementById('aPop').style.display = document.getElementById('aPop').style.display==='none'?'block':'none'">8 kvar ▾</button>
+    </div>
+    <div class="pop" id="aPop">
+      <div class="stepper">
+        <button onclick="aAdj(-1)">−</button>
+        <span class="num" id="aNum">8</span>
+        <button onclick="aAdj(1)">+</button>
+      </div>
+      <div class="chips">
+        <button class="chip" onclick="aSet(5)">+5</button>
+        <button class="chip" onclick="aSet(10)">+10</button>
+        <button class="chip accent" onclick="aSet('all')">Alla kvar</button>
+        <button class="chip warn" onclick="aSet('end')">Avsluta nu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VARIANT B -->
+  <div class="variant">
+    <h2>B — Egen justera-knapp + förval</h2>
+    <p>“8 kvar” står kvar som ren info; en liten <b>⚙</b> öppnar en rad med förval. <span class="pro">Tydlig och lätt att hitta.</span> <span class="con">Tar en knapp till i fältet.</span></p>
+    <div class="bar">
+      <button class="back">←</button>
+      <select class="sel"><option>Från svenska</option></select>
+      <button class="pill">8 kvar</button>
+      <button class="iconbtn" onclick="var p=document.getElementById('bPanel');p.style.display=p.style.display==='none'?'flex':'none'">⚙</button>
+    </div>
+    <div class="presets" id="bPanel">
+      <button onclick="bPick(this,5)">5</button>
+      <button onclick="bPick(this,10)" class="on">10</button>
+      <button onclick="bPick(this,15)">15</button>
+      <button onclick="bPick(this,20)">20</button>
+      <button onclick="bPick(this,'all')">Alla</button>
+    </div>
+  </div>
+
+  <!-- VARIANT C -->
+  <div class="variant">
+    <h2>C — Inline-stegare (alltid synlig)</h2>
+    <p>En kompakt <b>− 8 +</b> direkt i fältet, inget extra tryck. <span class="pro">Snabbast.</span> <span class="con">Trängre fält; “+/−” = lägg till/ta bort kort ur passet.</span></p>
+    <div class="bar">
+      <button class="back">←</button>
+      <select class="sel"><option>Från svenska</option></select>
+      <div class="inline">
+        <button onclick="cAdj(-1)">−</button>
+        <span class="n" id="cNum">8 kvar</span>
+        <button onclick="cAdj(1)">+</button>
+      </div>
+    </div>
+    <div class="hint">“+” drar in nästa kort i passet, “−” tar bort sista</div>
+  </div>
+
+<script>
+  let aN = 8;
+  function aRender(){ document.getElementById('aNum').textContent = aN; document.getElementById('aPill').textContent = aN + ' kvar ▾'; }
+  function aAdj(d){ aN = Math.max(1, aN + d); aRender(); }
+  function aSet(v){ if(v==='all'){ aN = 23; } else if(v==='end'){ aN = 1; } else { aN += v; } aRender(); }
+  let cN = 8;
+  function cAdj(d){ cN = Math.max(1, cN + d); document.getElementById('cNum').textContent = cN + ' kvar'; }
+  function bPick(el,v){ [...el.parentNode.children].forEach(b=>b.classList.remove('on')); el.classList.add('on'); }
+</script>
+</body>
+</html>
