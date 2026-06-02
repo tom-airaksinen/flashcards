@@ -16,6 +16,7 @@
 ## Träningslägen
 - [x] Ett läge eller flera? → **Svar:** Två: (A) lektionsträning (cram, svagast först), (B) "Dags att öva" på ämnesnivå (förfallna idag, valbara lektioner). Samma motor. (2026-05-30)
 - [x] Vad ska det schemalagda läget heta? → **Svar:** "Dags att öva" (2026-05-30)
+- [ ] "Träna ett urval per lektion" (kärnord)? → **Idé:** stjärnmarkera vissa ord + filter "bara kärnord", så t.ex. barnen kan köra topp-N medan man själv kör alla. Manuell markering valdes framför auto-frekvens (frekvenskorpusar passar dåligt för artiklar/fraser och domänlistor som glassmaker). Noll-kod-alternativ: separat "topp 10"-lektion – orddelad SRS gör att träningen ändå räknas i den stora lektionen. (Diskuterad 2026-06-02)
 
 ## UI/UX
 - [x] Tema? → **Svar:** Neutralt/generiskt (inga sportreferenser) (2026-05-30)
