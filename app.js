@@ -971,7 +971,7 @@ function askWords() {
     const m = openModal(`
       <h3>Lägg till ord</h3>
       <p class="modal-hint">Ett ord per rad: <b>utländskt;svenskt</b> — t.ex. <code>grazie;tack</code></p>
-      <textarea id="m-text" placeholder="ciao;hej&#10;grazie;tack"></textarea>
+      <textarea id="m-text" autocapitalize="none" autocorrect="off" placeholder="ciao;hej&#10;grazie;tack"></textarea>
       <div class="modal-actions">
         <button class="btn-secondary" id="m-cancel">Avbryt</button>
         <button class="btn-primary" id="m-ok">Lägg till</button>
@@ -988,9 +988,9 @@ function askWord(front, back) {
     const m = openModal(`
       <h3>Redigera ord</h3>
       <label>Utländskt (framsida)</label>
-      <input type="text" id="m-front" value="${esc(front)}" autocomplete="off" />
+      <input type="text" id="m-front" value="${esc(front)}" autocomplete="off" autocapitalize="none" autocorrect="off" />
       <label>Svenska (baksida)</label>
-      <input type="text" id="m-back" value="${esc(back)}" autocomplete="off" />
+      <input type="text" id="m-back" value="${esc(back)}" autocomplete="off" autocapitalize="none" autocorrect="off" />
       <div class="modal-actions">
         <button class="btn-secondary" id="m-cancel">Avbryt</button>
         <button class="btn-primary" id="m-ok">Spara</button>
@@ -1314,11 +1314,11 @@ function openTranslate(defaultLessonId) {
     </div>
     <label id="t-src-label">Svenska</label>
     <div class="t-row">
-      <input type="text" id="t-src" autocomplete="off" placeholder="t.ex. blomkål" />
+      <input type="text" id="t-src" autocomplete="off" autocapitalize="none" autocorrect="off" placeholder="t.ex. blomkål" />
       <button class="btn-secondary t-lookup" id="t-lookup">🔎</button>
     </div>
     <label id="t-dst-label">${esc(foreignLabel)}</label>
-    <input type="text" id="t-dst" autocomplete="off" placeholder="översättning (redigerbar)" />
+    <input type="text" id="t-dst" autocomplete="off" autocapitalize="none" autocorrect="off" placeholder="översättning (redigerbar)" />
     <label>Lägg till i</label>
     <select id="t-lesson">${lessonOpts}<option value="__new__">➕ Ny lektion…</option></select>
     <input type="text" id="t-newlesson" class="hidden" placeholder="Namn på ny lektion" autocomplete="off" />
@@ -1489,7 +1489,7 @@ $("menu-btn").onclick = async () => {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v31";
+const APP_VERSION = "v32";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
