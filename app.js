@@ -488,6 +488,10 @@ const progressPill = $("progress-pill");
 const feedbackEl = $("swipe-feedback");
 
 let session = null; // { queue:[card], dirMode, current, shownDir }
+// Kort som redan visats i den pågående "Fortsätt"-kedjan (rundan). Nollställs vid ny
+// runda (när man startar från knappen, inte via Fortsätt) så att fel-svarade ord inte
+// kommer tillbaka förrän man tryckt Klar och börjar om.
+let runSeen = new Set();
 
 // ---- Antal kort per pass ----
 const SESSION_LIMIT_KEY = "flashcards-session-limit";
@@ -506,9 +510,10 @@ function pickDir(dirMode) {
   return Math.random() < 0.5 ? "f2b" : "b2f";
 }
 
-async function startLessonSession(lessonId, force = false) {
+async function startLessonSession(lessonId, force = false, continuing = false) {
   const lesson = currentSubject.lessons.find((l) => l.id === lessonId);
   if (!lesson || !lesson.cards.length) return;
+  if (!continuing) runSeen = new Set(); // ny runda
   const dirMode = dirSelect.value;
   // Bara ord som är aktiva idag: nya + de man svarat fel/hopplöst på (due <= nu).
   // Kan/kan-bra-ord har skjutits framåt och dyker inte upp igen samma dag.
@@ -517,7 +522,7 @@ async function startLessonSession(lessonId, force = false) {
     dirMode === "f2b" ? getEntry(c, "f2b").due <= now
     : dirMode === "b2f" ? getEntry(c, "b2f").due <= now
     : (getEntry(c, "f2b").due <= now || getEntry(c, "b2f").due <= now);
-  const pool = force ? [...lesson.cards] : lesson.cards.filter(activeToday);
+  const pool = (force ? [...lesson.cards] : lesson.cards.filter(activeToday)).filter((c) => !runSeen.has(c.id));
   if (!pool.length) {
     const yes = await confirmPrimary(
       "Inget kvar att öva idag",
@@ -535,19 +540,21 @@ async function startLessonSession(lessonId, force = false) {
     .map((x) => x.c);
   const lim = sessionLimit();
   const queue = lim ? ordered.slice(0, lim) : ordered;
+  queue.forEach((c) => runSeen.add(c.id)); // markera som sedda i rundan
   const note = lim && ordered.length > queue.length
     ? `Pass klart! 🎉 ${queue.length} av ${ordered.length} ord – resten kommer nästa pass.`
     : "";
   beginSession({ queue, dirMode, label: lesson.name, note, kind: "lesson", lessonId, forced: force, continueLimit: (lim && ordered.length > queue.length) ? lim : 0 });
 }
 
-function startDueSession() {
+function startDueSession(continuing = false) {
+  if (!continuing) runSeen = new Set(); // ny runda
   const now = Date.now();
   const dirMode = dirSelect.value;
   const due = [];
   currentSubject.lessons.forEach((l) =>
     l.cards.forEach((c) => {
-      if (isDue(c, "f2b", now) || isDue(c, "b2f", now)) due.push(c);
+      if ((isDue(c, "f2b", now) || isDue(c, "b2f", now)) && !runSeen.has(c.id)) due.push(c);
     })
   );
   if (!due.length) return;
@@ -555,6 +562,7 @@ function startDueSession() {
     Math.min(getEntry(b, "f2b").due, getEntry(b, "b2f").due));
   const lim = sessionLimit();
   const queue = lim ? due.slice(0, lim) : due;
+  queue.forEach((c) => runSeen.add(c.id)); // markera som sedda i rundan
   const note = lim && due.length > queue.length
     ? `Pass klart! 🎉 ${queue.length} av ${due.length} förfallna ord – resten kvar.`
     : "";
@@ -613,7 +621,7 @@ function finishSession() {
   if (showCont) {
     contBtn.textContent = `Fortsätt med ${cont.limit} till`;
     contBtn.classList.remove("hidden");
-    contBtn.onclick = () => (cont.kind === "due" ? startDueSession() : startLessonSession(cont.lessonId, cont.forced));
+    contBtn.onclick = () => (cont.kind === "due" ? startDueSession(true) : startLessonSession(cont.lessonId, cont.forced, true));
   } else {
     contBtn.classList.add("hidden");
   }
@@ -1489,7 +1497,7 @@ $("menu-btn").onclick = async () => {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v33";
+const APP_VERSION = "v34";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
