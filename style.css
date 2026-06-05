@@ -14,9 +14,9 @@ input, textarea {
 }
 
 :root {
-  --bg: #15171c;
-  --surface: #1f232b;
-  --surface-2: #272c36;
+  --bg: #0d1426;
+  --surface: #16203a;
+  --surface-2: #1f2c4d;
   --text: #f2f4f8;
   --muted: #9aa3b2;
   --accent: #5b8cff;
@@ -63,7 +63,8 @@ body {
   gap: 12px;
   padding: 18px 16px 10px;
 }
-.app-header h1 { font-size: 1.3rem; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-header h1 { font-size: 1.3rem; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 9px; }
+.app-logo { width: 30px; height: 30px; border-radius: 8px; flex: none; }
 
 .icon-btn {
   background: var(--surface);
@@ -115,14 +116,14 @@ body {
 .row-meta { color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
 .due-tag {
   background: var(--easy);
-  color: #15171c;
+  color: #0d1426;
   border-radius: 8px;
   padding: 2px 8px;
   font-size: 0.72rem;
   font-weight: 600;
   margin-right: 8px;
 }
-#due-btn { background: var(--easy); color: #15171c; }
+#due-btn { background: var(--easy); color: #0d1426; }
 .empty { color: var(--muted); padding: 24px 16px; text-align: center; }
 .version-tag { margin-top: auto; text-align: center; color: var(--muted); font-size: 0.7rem; opacity: 0.55; padding: 10px 0 16px; }
 
@@ -223,8 +224,8 @@ body {
   box-shadow: 0 8px 22px rgba(0,0,0,0.35);
   display: none;
 }
-.card-stack::before { background: #1a1d24; transform: rotate(-4deg) translateY(6px); z-index: 0; }
-.card-stack::after  { background: #232833; transform: rotate(3deg) translateY(3px); z-index: 1; }
+.card-stack::before { background: #131c33; transform: rotate(-4deg) translateY(6px); z-index: 0; }
+.card-stack::after  { background: #1c2a4d; transform: rotate(3deg) translateY(3px); z-index: 1; }
 /* 2+ kort kvar under: visa båda. 1 kvar: visa bara det närmaste. Sista: inga. */
 .card-stack.stack-2::before, .card-stack.stack-2::after { display: block; }
 .card-stack.stack-1::after { display: block; }
@@ -419,7 +420,7 @@ body {
   flex: 1;
   min-width: 0;
   background: var(--surface-2);
-  border: 1px solid #3a4150;
+  border: 1px solid #2c3c63;
   border-radius: 10px;
   color: var(--text);
   padding: 11px 14px;
@@ -503,7 +504,7 @@ body {
 .modal label { font-size: 0.82rem; color: var(--muted); margin-bottom: -6px; }
 .modal input, .modal textarea {
   background: var(--surface-2);
-  border: 1px solid #3a4150;
+  border: 1px solid #2c3c63;
   border-radius: 10px;
   color: var(--text);
   padding: 12px;
