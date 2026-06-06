@@ -490,6 +490,7 @@ function esc(s) {
 //  Träning – sessionskö
 // =========================================================================
 const card = $("card");
+const cardInner = card.querySelector(".card-inner");
 const cardFront = $("card-front");
 const cardBack = $("card-back");
 const dirSelect = $("dir-select");
@@ -600,7 +601,12 @@ function loadCard() {
     finishSession();
     return;
   }
+  // Snäpp tillbaka till framsidan UTAN flip-animation, annars hinner baksidan
+  // (svaret) skymtas medan nästa kort vänder sig rätt.
+  cardInner.style.transition = "none";
   card.classList.remove("flipped");
+  void cardInner.offsetWidth; // tvinga omritning så transition:none gäller
+  cardInner.style.transition = "";
   const c = session.queue[0];
   const dir = pickDir(session.dirMode);
   session.current = c;
@@ -1505,7 +1511,7 @@ $("menu-btn").onclick = async () => {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v37";
+const APP_VERSION = "v38";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
