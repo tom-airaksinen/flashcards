@@ -325,6 +325,7 @@ function dueCountForLessons(lessons) {
 
 function renderLessons() {
   if (!currentSubject) return renderSubjects();
+  stopHandsfree();
   if (lessonDrag && lessonDrag.active) return; // rita inte om mitt i en drag-omordning
   // Plocka färsk referens (innehåll kan ha uppdaterats från Firebase)
   currentSubject = content.find((s) => s.id === currentSubject.id) || currentSubject;
@@ -631,11 +632,13 @@ function loadCard() {
   updateStack();
   showSpeakSoon(300);
   editCardBtn.classList.remove("hidden");
+  if (handsfreeActive) setTimeout(() => { if (handsfreeActive) hfSpeakFront(); }, 400);
 }
 
 const DONE_LABELS = ["Grymt!", "Nice!", "Hell yeah!", "Snyggt!", "Kanon!", "Toppen!", "Bra jobbat!", "Yes!", "Så ska det se ut!", "Mästerligt!"];
 
 function finishSession() {
+  stopHandsfree();
   const cont = session ? { limit: session.continueLimit, kind: session.kind, lessonId: session.lessonId, forced: session.forced } : null;
   $("congrats-sub").textContent = (session && session.note) || `${session ? session.label : ""} – klar! 🎉`;
   $("congrats-done").textContent = DONE_LABELS[Math.floor(Math.random() * DONE_LABELS.length)];
@@ -733,8 +736,8 @@ const AUTO_SPEAK_KEY = "flippa-autospeak";
 let autoSpeak = localStorage.getItem(AUTO_SPEAK_KEY) === "1";
 function saveAutoSpeak() { localStorage.setItem(AUTO_SPEAK_KEY, autoSpeak ? "1" : "0"); }
 
-function speak(text, lang) {
-  if (!text || !("speechSynthesis" in window)) return;
+function speak(text, lang, onEnd) {
+  if (!text || !("speechSynthesis" in window)) { if (onEnd) setTimeout(onEnd, 0); return; }
   const u = new SpeechSynthesisUtterance(text);
   if (lang) {
     u.lang = lang;
@@ -743,6 +746,7 @@ function speak(text, lang) {
               voices.find((x) => x.lang.replace("_", "-").startsWith(lang.slice(0, 2)));
     if (v) u.voice = v;
   }
+  if (onEnd) u.onend = onEnd;
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
 }
@@ -775,7 +779,7 @@ function showSpeakSoon(delay) {
   setTimeout(() => {
     updateSpeakBtn();
     // autoläge: läs upp så fort den utländska sidan blir synlig
-    if (autoSpeak && session && session.current && foreignVisible() && hasVoiceFor(subjectLang(currentSubject))) {
+    if (autoSpeak && !handsfreeActive && session && session.current && foreignVisible() && hasVoiceFor(subjectLang(currentSubject))) {
       speak(session.current.front, subjectLang(currentSubject));
     }
   }, delay);
@@ -1532,9 +1536,184 @@ $("menu-btn").onclick = async () => {
 };
 
 // =========================================================================
+//  Handsfree-läge
+// =========================================================================
+let handsfreeActive = false;
+let hfListening = false;
+let hfRecognition = null;
+let hfTimeoutId = null;
+let hfWakeLock = null;
+
+const hfBtn = $("handsfree-btn");
+const hfStatusEl = $("hf-status");
+
+hfBtn.addEventListener("click", () => {
+  if (handsfreeActive) stopHandsfree();
+  else startHandsfree();
+});
+
+function startHandsfree() {
+  if (!session || !session.current) return;
+  handsfreeActive = true;
+  hfBtn.classList.add("active");
+  // Snäpp tillbaka till framsidan om kortet råkar vara flippat
+  if (card.classList.contains("flipped")) {
+    cardInner.style.transition = "none";
+    card.classList.remove("flipped");
+    void cardInner.offsetWidth;
+    cardInner.style.transition = "";
+  }
+  if ("wakeLock" in navigator) {
+    navigator.wakeLock.request("screen").then((lock) => { hfWakeLock = lock; }).catch(() => {});
+  }
+  hfSpeakFront();
+}
+
+function stopHandsfree() {
+  if (!handsfreeActive) return;
+  handsfreeActive = false;
+  hfListening = false;
+  hfBtn.classList.remove("active");
+  hfStatusEl.textContent = "";
+  clearTimeout(hfTimeoutId);
+  if (hfRecognition) { try { hfRecognition.abort(); } catch (_) {} hfRecognition = null; }
+  if (hfWakeLock) { hfWakeLock.release().catch(() => {}); hfWakeLock = null; }
+  speechSynthesis.cancel();
+}
+
+// Vilket text + språk som visas på fram- resp. baksidan just nu
+function hfText(back) {
+  const c = session.current;
+  const f2b = session.shownDir === "f2b";
+  return back ? (f2b ? c.back : c.front) : (f2b ? c.front : c.back);
+}
+function hfLang(back) {
+  const foreign = subjectLang(currentSubject);
+  const f2b = session.shownDir === "f2b";
+  return back ? (f2b ? "sv-SE" : foreign) : (f2b ? foreign : "sv-SE");
+}
+
+function hfSpeakFront() {
+  if (!handsfreeActive || !session || !session.current) return;
+  hfStatusEl.textContent = "";
+  speak(hfText(false), hfLang(false), () => {
+    if (handsfreeActive) hfStartListening(true);
+  });
+}
+
+function hfSpeakBack(thenGrade) {
+  if (!handsfreeActive || !session || !session.current) return;
+  card.classList.add("flipped");
+  speak(hfText(true), hfLang(true), () => {
+    if (!handsfreeActive) return;
+    if (thenGrade) {
+      showFeedback(thenGrade);
+      flyOut(thenGrade);
+    } else {
+      hfStartListening(true);
+    }
+  });
+}
+
+// Kommandon i matchningsordning (längsta/specifika fraser först)
+const HF_CMDS = [
+  { word: "hopplöst", grade: "hard" },
+  { word: "flippa",   grade: null   },
+  { word: "inte",     grade: "fail" },
+  { word: "bra",      grade: "easy" },
+  { word: "kan",      grade: "good" },
+];
+
+function hfHandleTranscript(transcript) {
+  const t = transcript.toLowerCase();
+  for (const cmd of HF_CMDS) {
+    if (!t.includes(cmd.word)) continue;
+    hfStatusEl.textContent = cmd.word;
+    setTimeout(() => { if (hfStatusEl.textContent === cmd.word) hfStatusEl.textContent = "lyssnar…"; }, 1500);
+    if (cmd.grade === null) {
+      // "flippa": flip och läs upp baksidan
+      hfSpeakBack(null);
+    } else {
+      // Betygssättning — om kortet inte är flippat, visa/läs svaret först
+      if (card.classList.contains("flipped")) {
+        showFeedback(cmd.grade);
+        flyOut(cmd.grade);
+      } else {
+        hfSpeakBack(cmd.grade);
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+function hfStartListening(resetTimer) {
+  if (!handsfreeActive) return;
+  hfListening = true;
+  hfStatusEl.textContent = "lyssnar…";
+
+  if (resetTimer) {
+    clearTimeout(hfTimeoutId);
+    hfTimeoutId = setTimeout(() => {
+      if (!handsfreeActive || !hfListening) return;
+      if (hfRecognition) { try { hfRecognition.abort(); } catch (_) {} }
+      hfListening = false;
+      // Upprepa aktuell sida efter 15 s tystnad
+      if (card.classList.contains("flipped")) hfSpeakBack(null);
+      else hfSpeakFront();
+    }, 15000);
+  }
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { hfStatusEl.textContent = "Taligenkänning stöds ej på den här enheten"; return; }
+
+  const rec = new SR();
+  hfRecognition = rec;
+  rec.lang = "sv-SE";
+  rec.continuous = false;
+  rec.interimResults = true;
+  rec.maxAlternatives = 3;
+
+  rec.onresult = (e) => {
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      for (let j = 0; j < e.results[i].length; j++) {
+        if (hfHandleTranscript(e.results[i][j].transcript)) {
+          hfListening = false;
+          clearTimeout(hfTimeoutId);
+          try { rec.stop(); } catch (_) {}
+          return;
+        }
+      }
+    }
+  };
+
+  rec.onerror = (e) => {
+    if (e.error === "aborted" || e.error === "no-speech") return;
+    if (e.error === "not-allowed") {
+      hfStatusEl.textContent = "Mikrofon ej tillåten";
+      stopHandsfree();
+    }
+  };
+
+  rec.onend = () => {
+    // iOS stänger av continuous mode — starta om direkt
+    if (handsfreeActive && hfListening) {
+      setTimeout(() => {
+        if (handsfreeActive && hfListening) {
+          hfRecognition = null;
+          hfStartListening(false); // fortsätt utan att nolla timeout
+        }
+      }, 250);
+    }
+  };
+
+  try { rec.start(); } catch (_) {}
+}
+
+// =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v40";
+const APP_VERSION = "v41";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

@@ -373,6 +373,37 @@ body {
 .switch input:checked + .slider { background: var(--good); }
 .switch input:checked + .slider::before { transform: translateX(18px); }
 
+/* ---- Handsfree ---- */
+.hf-status {
+  min-height: 1.3em;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.88rem;
+  padding: 0 16px 2px;
+}
+.hf-btn {
+  margin: 2px 16px 10px;
+  padding: 13px;
+  border: none;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: calc(100% - 32px);
+  transition: background 0.15s;
+}
+.hf-btn.active {
+  background: var(--accent);
+  color: #fff;
+  animation: hf-pulse 1.8s ease-in-out infinite;
+}
+@keyframes hf-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(91,140,255,0.5); }
+  50%       { box-shadow: 0 0 0 10px rgba(91,140,255,0); }
+}
+
 /* ---- Klar-skärm ---- */
 #congrats-screen {
   align-items: center;
