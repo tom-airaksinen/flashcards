@@ -1804,7 +1804,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v52";
+const APP_VERSION = "v53";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
@@ -1831,3 +1831,34 @@ if ("serviceWorker" in navigator) {
 }
 
 boot();
+
+// ===== TEMP DIAGNOSTIK (tas bort efter felsökning) =====
+(function diag() {
+  const probe = document.createElement("div");
+  probe.style.cssText = "position:fixed;top:0;left:-9999px;width:1px;height:100dvh;";
+  const probeSvh = document.createElement("div");
+  probeSvh.style.cssText = "position:fixed;top:0;left:-9999px;width:1px;height:100svh;";
+  const probeLvh = document.createElement("div");
+  probeLvh.style.cssText = "position:fixed;top:0;left:-9999px;width:1px;height:100lvh;";
+  document.body.append(probe, probeSvh, probeLvh);
+  const d = document.createElement("div");
+  d.style.cssText = "position:fixed;left:0;right:0;top:env(safe-area-inset-top);z-index:99999;background:rgba(200,0,0,0.9);color:#fff;font:11px/1.45 monospace;padding:6px 8px;white-space:pre;pointer-events:none;text-align:left;";
+  document.body.appendChild(d);
+  function upd() {
+    const vv = window.visualViewport;
+    const ts = document.getElementById("training-screen");
+    const ca = document.querySelector(".card-area");
+    const cd = document.getElementById("card");
+    const H = (el) => el ? Math.round(el.getBoundingClientRect().height) : "-";
+    d.textContent =
+      "innerH=" + window.innerHeight +
+      "  vv.h=" + (vv ? Math.round(vv.height) : "-") +
+      "  docElClientH=" + document.documentElement.clientHeight + "\n" +
+      "100dvh=" + probe.offsetHeight + "  100svh=" + probeSvh.offsetHeight + "  100lvh=" + probeLvh.offsetHeight + "\n" +
+      "body.offH=" + document.body.offsetHeight + "  screenH=" + H(ts) + "\n" +
+      "cardAreaH=" + H(ca) + "  cardH=" + H(cd) +
+      "  saTop=" + getComputedStyle(document.body).paddingTop +
+      " saBot=" + getComputedStyle(document.body).paddingBottom;
+  }
+  setInterval(upd, 400); upd();
+})();
