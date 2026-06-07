@@ -211,18 +211,15 @@ body {
 
 .card-area {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px 22px;
-  margin-bottom: 16px; /* garanterad lucka ner till toggeln */
+  position: relative; /* containing block för det absolut-positionerade kortet */
+  margin-bottom: 16px;
   min-height: 0;
-  overflow: hidden; /* skyddsnät: även om %-höjd ej resolvas spiller kortet aldrig över kontrollerna */
+  overflow: hidden;
 }
-/* max-height i dvh (inte %) är "definite" i WebKit → begränsar kortet även när
-   förälderns flex-höjd inte är det. ~430px lämnar plats för train-bar, toggle,
-   Handsfree, hints och safe-areas så kortet aldrig täcker kontrollerna. */
-.card-stack { width: 100%; max-width: 372px; aspect-ratio: 3 / 4; position: relative; max-height: calc(100dvh - 430px); margin: auto; }
+/* Kortet positioneras absolut och fyller card-area minus insets. Absoluta mått
+   resolvas mot card-areas (definite) layout-höjd → kringgår WebKit-buggen där
+   aspect-ratio+width åsidosätter max-height och får kortet att klippas. */
+.card-stack { position: absolute; inset: 12px 22px; margin: auto; max-width: 372px; }
 
 /* Kort i högen bakom det aktiva – antal styrs av klass på .card-stack */
 .card-stack::before, .card-stack::after {
