@@ -632,7 +632,7 @@ function loadCard() {
   updateStack();
   showSpeakSoon(300);
   editCardBtn.classList.remove("hidden");
-  if (handsfreeActive) setTimeout(() => { if (handsfreeActive) hfSpeakFront(); }, 400);
+  if (handsfreeActive) { clearTimeout(hfLoadCardTimer); hfLoadCardTimer = setTimeout(() => { if (handsfreeActive) hfSpeakFront(); }, 400); }
 }
 
 const DONE_LABELS = ["Grymt!", "Nice!", "Hell yeah!", "Snyggt!", "Kanon!", "Toppen!", "Bra jobbat!", "Yes!", "Så ska det se ut!", "Mästerligt!"];
@@ -1542,6 +1542,7 @@ let handsfreeActive = false;
 let hfListening = false;
 let hfRecognition = null;
 let hfTimeoutId = null;
+let hfLoadCardTimer = null;
 let hfWakeLock = null;
 
 const hfBtn = $("handsfree-btn");
@@ -1576,6 +1577,7 @@ function stopHandsfree() {
   hfBtn.classList.remove("active");
   hfStatusEl.textContent = "";
   clearTimeout(hfTimeoutId);
+  clearTimeout(hfLoadCardTimer);
   if (hfRecognition) { try { hfRecognition.abort(); } catch (_) {} hfRecognition = null; }
   if (hfWakeLock) { hfWakeLock.release().catch(() => {}); hfWakeLock = null; }
   speechSynthesis.cancel();
@@ -1595,6 +1597,7 @@ function hfLang(back) {
 
 function hfSpeakFront() {
   if (!handsfreeActive || !session || !session.current) return;
+  clearTimeout(hfLoadCardTimer);
   hfStatusEl.textContent = "";
   speak(hfText(false), hfLang(false), () => {
     if (handsfreeActive) hfStartListening(true);
@@ -1603,15 +1606,21 @@ function hfSpeakFront() {
 
 function hfSpeakBack(thenGrade) {
   if (!handsfreeActive || !session || !session.current) return;
+  clearTimeout(hfLoadCardTimer);
   card.classList.add("flipped");
+  // "fail" (kan inte) och "hard" (hopplöst) får 2 s eftertänkpaus; övriga 400 ms iOS-buffert
+  const pause = (thenGrade === "fail" || thenGrade === "hard") ? 2000 : 400;
   speak(hfText(true), hfLang(true), () => {
     if (!handsfreeActive) return;
-    if (thenGrade) {
-      showFeedback(thenGrade);
-      flyOut(thenGrade);
-    } else {
-      hfStartListening(true);
-    }
+    setTimeout(() => {
+      if (!handsfreeActive) return;
+      if (thenGrade) {
+        showFeedback(thenGrade);
+        flyOut(thenGrade);
+      } else {
+        hfStartListening(true);
+      }
+    }, pause);
   });
 }
 
@@ -1636,6 +1645,7 @@ function hfHandleTranscript(transcript) {
     } else {
       // Betygssättning — om kortet inte är flippat, visa/läs svaret först
       if (card.classList.contains("flipped")) {
+        clearTimeout(hfLoadCardTimer);
         showFeedback(cmd.grade);
         flyOut(cmd.grade);
       } else {
@@ -1713,7 +1723,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v41";
+const APP_VERSION = "v42";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
