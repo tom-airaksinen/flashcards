@@ -325,6 +325,16 @@ body {
   to   { opacity: 1; transform: none; }
 }
 
+/* fly-in (shake-to-undo): kortet glider tillbaka in från samma håll det lämnade */
+.card.in-right { animation: in-right 0.36s ease-out; }
+.card.in-left  { animation: in-left 0.36s ease-out; }
+.card.in-up    { animation: in-up 0.36s ease-out; }
+.card.in-down  { animation: in-down 0.36s ease-out; }
+@keyframes in-right { from { transform: translateX(140%) rotate(18deg); }  to { transform: none; } }
+@keyframes in-left  { from { transform: translateX(-140%) rotate(-18deg); } to { transform: none; } }
+@keyframes in-up    { from { transform: translateY(-140%) scale(0.9); }     to { transform: none; } }
+@keyframes in-down  { from { transform: translateY(140%) rotate(-6deg); }   to { transform: none; } }
+
 #swipe-feedback {
   position: fixed;
   top: 50%; left: 50%;
@@ -340,6 +350,14 @@ body {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
   30% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
+/* Tydligare, längre overlay för ångra-pilen */
+#swipe-feedback.undo-show { animation: undo-pop 0.9s ease-out; }
+@keyframes undo-pop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(-35deg); }
+  20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.35) rotate(0deg); }
+  70%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
 }
 
 .train-footer {

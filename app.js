@@ -735,7 +735,7 @@ function showFeedback(grade) {
   const [sym, color] = map[grade];
   feedbackEl.textContent = sym;
   feedbackEl.style.color = color;
-  feedbackEl.classList.remove("show");
+  feedbackEl.classList.remove("show", "undo-show");
   void feedbackEl.offsetWidth;
   feedbackEl.classList.add("show");
 }
@@ -756,17 +756,21 @@ function undoLastAnswer() {
   session.queue = snap.queue.slice();
   showUndoFeedback();
   loadCard(snap.dir);
-  card.classList.remove("emerge");
+  // Kortet glider tillbaka in från samma håll det lämnade (omvänd fly-out)
+  const inClass = { good: "in-right", easy: "in-up", hard: "in-down", fail: "in-left" }[snap.grade] || "in-up";
+  card.classList.remove("emerge", "in-right", "in-left", "in-up", "in-down");
   void card.offsetWidth;
-  card.classList.add("emerge");
+  animating = true;
+  card.classList.add(inClass);
+  setTimeout(() => { card.classList.remove(inClass); animating = false; }, 360);
 }
 
 function showUndoFeedback() {
   feedbackEl.textContent = "↩️";
   feedbackEl.style.color = "#5b8cff";
-  feedbackEl.classList.remove("show");
+  feedbackEl.classList.remove("show", "undo-show");
   void feedbackEl.offsetWidth;
-  feedbackEl.classList.add("show");
+  feedbackEl.classList.add("undo-show");
 }
 
 let motionReqDone = false;
@@ -1799,7 +1803,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v45";
+const APP_VERSION = "v46";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
