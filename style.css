@@ -212,8 +212,9 @@ body {
   justify-content: center;
   padding: 16px;
   min-height: 0;
+  overflow: hidden;
 }
-.card-stack { width: 100%; max-width: 380px; aspect-ratio: 3 / 4; position: relative; }
+.card-stack { width: 100%; max-width: 380px; aspect-ratio: 3 / 4; position: relative; max-height: 100%; }
 
 /* Kort i högen bakom det aktiva – antal styrs av klass på .card-stack */
 .card-stack::before, .card-stack::after {
@@ -374,16 +375,9 @@ body {
 .switch input:checked + .slider::before { transform: translateX(18px); }
 
 /* ---- Handsfree ---- */
-.hf-status {
-  min-height: 1.3em;
-  text-align: center;
-  color: var(--muted);
-  font-size: 0.88rem;
-  padding: 0 16px 2px;
-}
 .hf-btn {
   margin: 2px 16px 10px;
-  padding: 13px;
+  padding: 11px 13px;
   border: none;
   border-radius: 12px;
   background: var(--surface-2);
@@ -393,6 +387,15 @@ body {
   cursor: pointer;
   width: calc(100% - 32px);
   transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.hf-status {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: rgba(255,255,255,0.6);
 }
 .hf-btn.active {
   background: var(--accent);
