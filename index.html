@@ -49,7 +49,10 @@
     <button id="due-btn" class="primary-btn hidden"></button>
     <button id="translate-subject" class="primary-btn alt hidden">🔎 Slå upp ord</button>
     <div class="editor-toolbar">
-      <input type="search" id="lessons-search" class="editor-search" placeholder="Sök i alla lektioner…" autocomplete="off" />
+      <div class="search-wrap">
+        <input type="search" id="lessons-search" class="editor-search" placeholder="Sök i alla lektioner…" autocomplete="off" />
+        <button class="search-clear hidden" tabindex="-1">✕</button>
+      </div>
     </div>
     <div id="lessons-list" class="list"></div>
   </section>
@@ -68,7 +71,10 @@
     </div>
     <div class="editor-toolbar">
       <button id="sort-btn" class="icon-btn" title="Sortera">⇅</button>
-      <input type="search" id="editor-search" class="editor-search" placeholder="Filtrera ord…" autocomplete="off" />
+      <div class="search-wrap">
+        <input type="search" id="editor-search" class="editor-search" placeholder="Filtrera ord…" autocomplete="off" />
+        <button class="search-clear hidden" tabindex="-1">✕</button>
+      </div>
     </div>
     <div id="editor-list" class="list"></div>
   </section>

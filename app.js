@@ -1173,14 +1173,23 @@ async function editSubject(sid) {
 }
 
 const editorSearch = $("editor-search");
-editorSearch.addEventListener("input", () => { if (activeScreen === "editor") renderEditor(); });
-$("lessons-search").addEventListener("input", () => { if (activeScreen === "lessons") renderLessons(); });
+
+function setupSearchClear(inputEl, onChange) {
+  const btn = inputEl.closest(".search-wrap").querySelector(".search-clear");
+  const sync = () => btn.classList.toggle("hidden", !inputEl.value);
+  inputEl.addEventListener("input", () => { sync(); onChange(); });
+  btn.addEventListener("click", () => { inputEl.value = ""; sync(); onChange(); inputEl.focus(); });
+  return sync;
+}
+const syncEditorClear = setupSearchClear(editorSearch, () => { if (activeScreen === "editor") renderEditor(); });
+setupSearchClear($("lessons-search"), () => { if (activeScreen === "lessons") renderLessons(); });
 
 let editorSort = "added"; // added | front-az | back-az | weak-front | weak-back
 
 function openEditor(lessonId) {
   currentLessonId = lessonId;
   editorSearch.value = ($("lessons-search").value || "").trim();
+  syncEditorClear();
   editorSort = "added";
   renderEditor();
 }
@@ -1525,7 +1534,7 @@ $("menu-btn").onclick = async () => {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v39";
+const APP_VERSION = "v40";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

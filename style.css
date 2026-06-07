@@ -416,18 +416,34 @@ body {
 }
 
 .editor-toolbar { display: flex; align-items: center; gap: 8px; margin: 0 16px 10px; }
+.search-wrap { position: relative; flex: 1; min-width: 0; }
 .editor-search {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
   background: var(--surface-2);
   border: 1px solid #2c3c63;
   border-radius: 10px;
   color: var(--text);
-  padding: 11px 14px;
+  padding: 11px 36px 11px 14px;
   font-size: 0.95rem;
   font-family: inherit;
 }
 .editor-search::placeholder { color: var(--muted); }
+.search-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 6px 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.search-clear:active { color: var(--text); }
 
 /* ---- Editor: ordrader ---- */
 .word-row {
