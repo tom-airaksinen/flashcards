@@ -210,11 +210,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 22px 22px;
+  padding: 16px 22px;
   min-height: 0;
-  overflow: hidden;
+  /* ingen overflow:hidden – max-height nedan hindrar kortet från att täcka train-bar,
+     och utan klippning kan bakgrundskortens roterade hörn aldrig kapas */
 }
-.card-stack { width: 100%; max-width: 372px; aspect-ratio: 3 / 4; position: relative; max-height: 100%; margin: auto; }
+.card-stack { width: 100%; max-width: 372px; aspect-ratio: 3 / 4; position: relative; max-height: calc(100% - 16px); margin: auto; }
 
 /* Kort i högen bakom det aktiva – antal styrs av klass på .card-stack */
 .card-stack::before, .card-stack::after {
@@ -328,10 +329,10 @@ body {
 /* fly-in (shake-to-undo): kortet glider tillbaka in från samma håll det lämnade.
    0,2s delay + långsam (0,7s) inglidning så man hinner se det efter skaket.
    fill:both håller kortet utanför skärmen under delayen (ingen hoppighet). */
-.card.in-right { animation: in-right 0.7s ease-out 0.2s both; }
-.card.in-left  { animation: in-left 0.7s ease-out 0.2s both; }
-.card.in-up    { animation: in-up 0.7s ease-out 0.2s both; }
-.card.in-down  { animation: in-down 0.7s ease-out 0.2s both; }
+.card.in-right { animation: in-right 0.7s ease-out 0.7s both; }
+.card.in-left  { animation: in-left 0.7s ease-out 0.7s both; }
+.card.in-up    { animation: in-up 0.7s ease-out 0.7s both; }
+.card.in-down  { animation: in-down 0.7s ease-out 0.7s both; }
 @keyframes in-right { from { transform: translateX(140%) rotate(18deg); }  to { transform: none; } }
 @keyframes in-left  { from { transform: translateX(-140%) rotate(-18deg); } to { transform: none; } }
 @keyframes in-up    { from { transform: translateY(-140%) scale(0.9); }     to { transform: none; } }
@@ -354,12 +355,14 @@ body {
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
 }
 /* Tydligare, längre overlay för ångra-pilen */
-#swipe-feedback.undo-show { animation: undo-pop 1.15s ease-out; }
+/* ↩️ poppar upp direkt, ligger kvar genom hela pausen (0,7s) och tonar bort
+   medan kortet glider in. Total 1,4s = 0,7s paus + 0,7s inglidning. */
+#swipe-feedback.undo-show { animation: undo-pop 1.4s ease-out; }
 @keyframes undo-pop {
   0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(-35deg); }
-  16%  { opacity: 1; transform: translate(-50%, -50%) scale(1.35) rotate(0deg); }
-  78%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
+  12%  { opacity: 1; transform: translate(-50%, -50%) scale(1.35) rotate(0deg); }
+  50%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.0); }
 }
 
 .train-footer {
