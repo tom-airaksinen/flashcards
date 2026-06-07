@@ -36,9 +36,9 @@ html, body {
 body {
   display: flex;
   flex-direction: column;
-  /* height (inte min-height) krävs för att barns %-höjd ska kunna resolvas i WebKit/Safari –
-     annars begränsas inte kortets max-height och det spiller över kontrollerna nedanför */
-  height: 100dvh;
+  /* min-height (inte height) så body alltid fyller skärmen på iOS standalone-PWA –
+     height:100dvh kan där resolvas till mindre än skärmen och lämna tomrum nedtill */
+  min-height: 100dvh;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
@@ -219,7 +219,10 @@ body {
   min-height: 0;
   overflow: hidden; /* skyddsnät: även om %-höjd ej resolvas spiller kortet aldrig över kontrollerna */
 }
-.card-stack { width: 100%; max-width: 372px; aspect-ratio: 3 / 4; position: relative; max-height: calc(100% - 24px); margin: auto; }
+/* max-height i dvh (inte %) är "definite" i WebKit → begränsar kortet även när
+   förälderns flex-höjd inte är det. ~430px lämnar plats för train-bar, toggle,
+   Handsfree, hints och safe-areas så kortet aldrig täcker kontrollerna. */
+.card-stack { width: 100%; max-width: 372px; aspect-ratio: 3 / 4; position: relative; max-height: calc(100dvh - 430px); margin: auto; }
 
 /* Kort i högen bakom det aktiva – antal styrs av klass på .card-stack */
 .card-stack::before, .card-stack::after {
