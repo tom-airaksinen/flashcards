@@ -211,11 +211,12 @@ body {
   align-items: center;
   justify-content: center;
   padding: 16px 22px;
+  margin-bottom: 16px; /* garanterad lucka så kortet (utan klippning) aldrig når toggeln nedanför */
   min-height: 0;
   /* ingen overflow:hidden – max-height nedan hindrar kortet från att täcka train-bar,
      och utan klippning kan bakgrundskortens roterade hörn aldrig kapas */
 }
-.card-stack { width: 100%; max-width: 372px; aspect-ratio: 3 / 4; position: relative; max-height: calc(100% - 16px); margin: auto; }
+.card-stack { width: 100%; max-width: 372px; aspect-ratio: 3 / 4; position: relative; max-height: calc(100% - 24px); margin: auto; }
 
 /* Kort i högen bakom det aktiva – antal styrs av klass på .card-stack */
 .card-stack::before, .card-stack::after {
