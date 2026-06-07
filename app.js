@@ -1743,8 +1743,14 @@ function hfHandleTranscript(transcript) {
     setTimeout(() => { if (hfStatusEl.textContent === cmd.word) hfStatusEl.textContent = "lyssnar…"; }, 1500);
     if (cmd.grade === null) {
       hfSpeakBack(null);
+    } else if (card.classList.contains("flipped")) {
+      // Redan flippat → svaret är redan uppläst (via "flippa"), läs inte upp igen,
+      // betygssätt direkt och gå vidare.
+      hfStopListening();
+      showFeedback(cmd.grade);
+      flyOut(cmd.grade);
     } else {
-      // Läs alltid upp svaret innan betygssättning, oavsett om kortet är flippat
+      // Inte flippat → läs upp svaret en gång innan betygssättning.
       hfSpeakBack(cmd.grade);
     }
     return true;
@@ -1814,7 +1820,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v56";
+const APP_VERSION = "v57";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
