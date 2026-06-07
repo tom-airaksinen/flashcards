@@ -344,7 +344,7 @@ body {
 @keyframes in-down  { from { transform: translateY(140%) rotate(-6deg); }   to { transform: none; } }
 
 #swipe-feedback {
-  position: fixed;
+  position: absolute;       /* centreras i card-area = över kortet (ej viewporten) */
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   font-size: 6rem;

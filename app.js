@@ -744,9 +744,9 @@ function showFeedback(grade) {
 //  Shake-to-undo – skaka telefonen för att ångra senaste svaret
 // =========================================================================
 function undoLastAnswer() {
-  if (!session || animating) return;
+  if (!session || animating) return false;
   const snap = undoStack.pop();
-  if (!snap) return;
+  if (!snap) return false;
   // Återställ SRS-poster (radera de som inte fanns före svaret)
   snap.srs.forEach(([k, v]) => { if (v === null) delete srs[k]; else srs[k] = v; });
   saveSRS();
@@ -764,6 +764,7 @@ function undoLastAnswer() {
   card.classList.add(inClass);
   // 0,7s delay + 0,7s inglidning = 1,4s; lite buffert innan vi släpper interaktion
   setTimeout(() => { card.classList.remove(inClass); animating = false; }, 1450);
+  return true;
 }
 
 function showUndoFeedback() {
@@ -1727,6 +1728,15 @@ const HF_CMDS = [
 
 function hfHandleTranscript(transcript) {
   const t = transcript.toLowerCase();
+  // "ångra" → ta tillbaka föregående kort. undoLastAnswer() läser upp det
+  // återställda kortet och återupptar lyssning via loadCard. Om inget fanns
+  // att ångra, återuppta lyssning direkt.
+  if (t.includes("ångra") || t.includes("ongra")) {
+    hfStatusEl.textContent = "ångra";
+    hfStopListening();
+    if (!undoLastAnswer()) hfStartListening(true);
+    return true;
+  }
   for (const cmd of HF_CMDS) {
     if (!t.includes(cmd.word)) continue;
     hfStatusEl.textContent = cmd.word;
@@ -1804,7 +1814,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v55";
+const APP_VERSION = "v56";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
