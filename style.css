@@ -211,10 +211,11 @@ body {
 
 .card-area {
   flex: 1;
-  position: relative; /* containing block för det absolut-positionerade kortet */
+  position: relative; /* containing block för kortet + gör att det målas ovanför knapparna (static) */
   margin-bottom: 16px;
   min-height: 0;
-  overflow: hidden;
+  /* ingen overflow:hidden – kortet ska få glida ut nedanför (hopplöst) ovanpå knapparna.
+     Kortet är absolut inpassat (inset) så inget överflöd sker i normalläge ändå. */
 }
 /* Kortet positioneras absolut och fyller card-area minus insets. Absoluta mått
    resolvas mot card-areas (definite) layout-höjd → kringgår WebKit-buggen där
