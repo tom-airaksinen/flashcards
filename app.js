@@ -308,6 +308,7 @@ function renderSubjects() {
 
 function openSubject(id) {
   currentSubject = content.find((s) => s.id === id);
+  $("lessons-search").value = "";
   renderLessons();
 }
 
@@ -342,11 +343,23 @@ function renderLessons() {
   }
 
   const list = $("lessons-list");
+  const filter = ($("lessons-search").value || "").trim().toLowerCase();
   if (!currentSubject.lessons.length) {
     list.innerHTML = `<p class="empty">Inga lektioner än. Tryck ＋ för att skapa en.</p>`;
     return;
   }
-  list.innerHTML = currentSubject.lessons
+  const lessonsToShow = filter
+    ? currentSubject.lessons.filter((l) =>
+        l.cards.some((c) =>
+          c.front.toLowerCase().includes(filter) || c.back.toLowerCase().includes(filter)
+        )
+      )
+    : currentSubject.lessons;
+  if (!lessonsToShow.length) {
+    list.innerHTML = `<p class="empty">Inga lektioner matchar "${esc(filter)}".</p>`;
+    return;
+  }
+  list.innerHTML = lessonsToShow
     .map((l) => {
       const d = dueCountForLessons([l]);
       const dueTag = d > 0 ? `<span class="due-tag">${d} dags</span>` : "";
@@ -1161,13 +1174,14 @@ async function editSubject(sid) {
 
 const editorSearch = $("editor-search");
 editorSearch.addEventListener("input", () => { if (activeScreen === "editor") renderEditor(); });
+$("lessons-search").addEventListener("input", () => { if (activeScreen === "lessons") renderLessons(); });
 
 let editorSort = "added"; // added | front-az | back-az | weak-front | weak-back
 
 function openEditor(lessonId) {
   currentLessonId = lessonId;
-  editorSearch.value = ""; // nollställ filter vid byte av lektion
-  editorSort = "added";    // default-sortering
+  editorSearch.value = ($("lessons-search").value || "").trim();
+  editorSort = "added";
   renderEditor();
 }
 
