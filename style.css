@@ -315,10 +315,22 @@ body {
   line-height: 1.35;
 }
 .card-back {
+  flex-direction: column;
+  gap: 18px;
   transform: rotateY(180deg);
   background: var(--surface-2);
   color: var(--text);
 }
+/* Minnesregel – liten dämpad text under svaret. 💡 prefix endast om regel finns. */
+.card-hint {
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--muted);
+  max-width: 90%;
+}
+.card-hint:not(:empty)::before { content: "💡 "; }
+.word-hint-flag { font-size: 0.8rem; opacity: 0.7; }
 
 /* fly-out / emerge animationer */
 .card.fly-right { transition: transform 0.22s ease-in; transform: translateX(140%) rotate(18deg); }

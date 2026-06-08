@@ -506,7 +506,8 @@ function esc(s) {
 const card = $("card");
 const cardInner = card.querySelector(".card-inner");
 const cardFront = $("card-front");
-const cardBack = $("card-back");
+const cardAnswer = $("card-answer");
+const cardHint = $("card-hint");
 const dirSelect = $("dir-select");
 const progressPill = $("progress-pill");
 const feedbackEl = $("swipe-feedback");
@@ -630,7 +631,8 @@ function loadCard(forceDir) {
   session.shownDir = dir;
   const showFrontFirst = dir === "f2b";
   cardFront.textContent = showFrontFirst ? c.front : c.back;
-  cardBack.textContent = showFrontFirst ? c.back : c.front;
+  cardAnswer.textContent = showFrontFirst ? c.back : c.front;
+  cardHint.textContent = c.hint || ""; // minnesregel på svarssidan (tom = döljs)
   updateProgress();
   updateStack();
   showSpeakSoon(300);
@@ -921,7 +923,7 @@ async function editCurrentCard() {
     lid = les && les.id;
   }
   if (!lid) return;
-  const res = await askWord(c.front, c.back);
+  const res = await askWord(c.front, c.back, c.hint);
   if (!res) return;
   // bevara inlärningen: flytta SRS-lådorna från gamla ordnyckeln till den nya
   ["f2b", "b2f"].forEach((dir) => {
@@ -932,11 +934,13 @@ async function editCurrentCard() {
   saveSRS();
   c.front = res.front;
   c.back = res.back;
-  updateCard(currentSubject.id, lid, c.id, res.front, res.back);
+  c.hint = res.hint || null;
+  updateCard(currentSubject.id, lid, c.id, res.front, res.back, res.hint);
   // uppdatera visat kort direkt
   const showFrontFirst = session.shownDir === "f2b";
   cardFront.textContent = showFrontFirst ? c.front : c.back;
-  cardBack.textContent = showFrontFirst ? c.back : c.front;
+  cardAnswer.textContent = showFrontFirst ? c.back : c.front;
+  cardHint.textContent = c.hint || "";
 }
 
 // =========================================================================
@@ -1110,7 +1114,7 @@ function askWords() {
   });
 }
 
-function askWord(front, back) {
+function askWord(front, back, hint) {
   return new Promise((resolve) => {
     const m = openModal(`
       <h3>Redigera ord</h3>
@@ -1118,6 +1122,8 @@ function askWord(front, back) {
       <input type="text" id="m-front" value="${esc(front)}" autocomplete="off" autocapitalize="none" autocorrect="off" />
       <label>Svenska (baksida)</label>
       <input type="text" id="m-back" value="${esc(back)}" autocomplete="off" autocapitalize="none" autocorrect="off" />
+      <label>Minnesregel (valfritt)</label>
+      <textarea id="m-hint" rows="2" placeholder="t.ex. liknar engelskans …" autocapitalize="sentences">${esc(hint || "")}</textarea>
       <div class="modal-actions">
         <button class="btn-secondary" id="m-cancel">Avbryt</button>
         <button class="btn-primary" id="m-ok">Spara</button>
@@ -1127,8 +1133,9 @@ function askWord(front, back) {
     m.querySelector("#m-ok").onclick = () => {
       const f = m.querySelector("#m-front").value.trim();
       const b = m.querySelector("#m-back").value.trim();
+      const h = m.querySelector("#m-hint").value.trim();
       closeModal();
-      resolve(f && b ? { front: f, back: b } : null);
+      resolve(f && b ? { front: f, back: b, hint: h } : null);
     };
   });
 }
@@ -1238,8 +1245,8 @@ function addCards(sid, lid, cards) {
   });
   return base.update(updates).catch(writeError);
 }
-function updateCard(sid, lid, cid, front, back) {
-  db.ref(`content/subjects/${sid}/lessons/${lid}/cards/${cid}`).update({ front, back }).catch(writeError);
+function updateCard(sid, lid, cid, front, back, hint) {
+  db.ref(`content/subjects/${sid}/lessons/${lid}/cards/${cid}`).update({ front, back, hint: hint || null }).catch(writeError);
 }
 function removeCard(sid, lid, cid) {
   db.ref(`content/subjects/${sid}/lessons/${lid}/cards/${cid}`).remove().catch(writeError);
@@ -1349,7 +1356,7 @@ function renderEditor() {
     .map(
       (c) => `<div class="word-row">
         <div class="word-texts" data-edit="${c.id}">
-          <div class="word-front">${esc(c.front)}</div>
+          <div class="word-front">${esc(c.front)}${c.hint ? ' <span class="word-hint-flag" title="Har minnesregel">💡</span>' : ""}</div>
           <div class="word-back">${esc(c.back)}</div>
         </div>
         <button class="word-del" data-del="${c.id}">🗑</button>
@@ -1365,8 +1372,8 @@ async function editWord(cid) {
   if (!lesson) return;
   const c = lesson.cards.find((x) => x.id === cid);
   if (!c) return;
-  const res = await askWord(c.front, c.back);
-  if (res) updateCard(currentSubject.id, lesson.id, cid, res.front, res.back);
+  const res = await askWord(c.front, c.back, c.hint);
+  if (res) { c.hint = res.hint || null; updateCard(currentSubject.id, lesson.id, cid, res.front, res.back, res.hint); }
 }
 
 async function deleteWord(cid) {
@@ -1701,20 +1708,33 @@ function hfSpeakBack(thenGrade) {
   clearTimeout(hfLoadCardTimer);
   hfStopListening();
   card.classList.add("flipped");
-  // "fail" (kan inte) och "hard" (hopplöst) får 2 s eftertänkpaus; övriga 400 ms iOS-buffert
-  const pause = (thenGrade === "fail" || thenGrade === "hard") ? 2000 : 400;
+  // "fail"/"hard" får 2 s eftertänkpaus – men om "hard" har en minnesregel ersätts
+  // pausen av att regeln läses upp (i hfFinishGrade), så då räcker iOS-bufferten.
+  const c = session.current;
+  const willReadHint = thenGrade === "hard" && c && c.hint;
+  const pause = (thenGrade === "fail" || (thenGrade === "hard" && !willReadHint)) ? 2000 : 400;
   speak(hfText(true), hfLang(true), () => {
     if (!handsfreeActive) return;
     setTimeout(() => {
       if (!handsfreeActive) return;
-      if (thenGrade) {
-        showFeedback(thenGrade);
-        flyOut(thenGrade);
-      } else {
-        hfStartListening(true);
-      }
+      if (thenGrade) hfFinishGrade(thenGrade);
+      else hfStartListening(true);
     }, pause);
   });
+}
+
+// Betygssätt i röstläge. Vid "hopplöst" (hard) läses minnesregeln upp (svenska)
+// som extra förstärkning innan nästa kort – om kortet har en sådan.
+function hfFinishGrade(grade) {
+  showFeedback(grade);
+  const c = session && session.current;
+  if (grade === "hard" && c && c.hint && handsfreeActive) {
+    speak(c.hint, "sv-SE", () => {
+      setTimeout(() => { if (handsfreeActive) flyOut(grade); }, 600);
+    });
+  } else {
+    flyOut(grade);
+  }
 }
 
 // Kommandon i matchningsordning (längsta/specifika fraser först)
@@ -1744,11 +1764,10 @@ function hfHandleTranscript(transcript) {
     if (cmd.grade === null) {
       hfSpeakBack(null);
     } else if (card.classList.contains("flipped")) {
-      // Redan flippat → svaret är redan uppläst (via "flippa"), läs inte upp igen,
-      // betygssätt direkt och gå vidare.
+      // Redan flippat → svaret är redan uppläst (via "flippa"), läs inte upp igen.
+      // hfFinishGrade läser ändå minnesregeln vid "hopplöst" innan nästa kort.
       hfStopListening();
-      showFeedback(cmd.grade);
-      flyOut(cmd.grade);
+      hfFinishGrade(cmd.grade);
     } else {
       // Inte flippat → läs upp svaret en gång innan betygssättning.
       hfSpeakBack(cmd.grade);
@@ -1820,7 +1839,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v58";
+const APP_VERSION = "v59";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
