@@ -795,7 +795,7 @@ function requestMotionPermissionOnce() {
 
 let shakeLast = { x: 0, y: 0, z: 0, t: 0 };
 let lastShakeTrigger = 0;
-const SHAKE_THRESHOLD = 950; // empiriskt; högre = kräver kraftigare skak
+const SHAKE_THRESHOLD = 1800; // empiriskt; högt så vanlig gång/rörelse inte triggar – kräver medvetet kraftig skak
 function onMotion(e) {
   if (activeScreen !== "training") return;
   const a = e.accelerationIncludingGravity;
@@ -1820,7 +1820,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v57";
+const APP_VERSION = "v58";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
