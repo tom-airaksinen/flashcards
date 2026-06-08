@@ -37,10 +37,12 @@ const LANG_OPTIONS = [
   { label: "Engelska", code: "en-GB" },
   { label: "Portugisiska", code: "pt-PT" },
   { label: "Ukrainska", code: "uk-UA" },
+  { label: "Indonesiska", code: "id-ID" },
 ];
 const LANG_GUESS = {
   italienska: "it-IT", tyska: "de-DE", franska: "fr-FR",
   spanska: "es-ES", engelska: "en-GB", portugisiska: "pt-PT", ukrainska: "uk-UA",
+  indonesiska: "id-ID", "bahasa indonesia": "id-ID",
 };
 // Returnerar ämnets språkkod (explicit fält, annars gissning från namnet)
 function subjectLang(s) {
@@ -50,7 +52,7 @@ function subjectLang(s) {
 // Flagga-emoji per språk (tomt om inget språk)
 const LANG_FLAG = {
   "it-IT": "🇮🇹", "de-DE": "🇩🇪", "fr-FR": "🇫🇷", "es-ES": "🇪🇸",
-  "en-GB": "🇬🇧", "pt-PT": "🇵🇹", "uk-UA": "🇺🇦",
+  "en-GB": "🇬🇧", "pt-PT": "🇵🇹", "uk-UA": "🇺🇦", "id-ID": "🇮🇩",
 };
 function subjectFlag(s) {
   return LANG_FLAG[subjectLang(s)] || "";
@@ -1839,7 +1841,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v59";
+const APP_VERSION = "v60";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
