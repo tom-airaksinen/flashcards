@@ -818,13 +818,15 @@ function finishSession() {
 
 function launchConfetti() {
   const colors = ["#5b8cff", "#5bbf72", "#f4c542", "#e05a4f", "#b06bf0", "#ff8fab"];
+  const host = $("congrats-screen"); // ligger inuti skärmen (absolut), inte fixed på body
+  host.querySelectorAll(".confetti-root").forEach((el) => el.remove());
   const root = document.createElement("div");
   root.className = "confetti-root";
-  for (let i = 0; i < 90; i++) {
+  for (let i = 0; i < 60; i++) {
     const p = document.createElement("i");
     const size = 6 + Math.random() * 8;
     p.style.cssText =
-      `left:${Math.random() * 100}vw;` +
+      `left:${Math.random() * 100}%;` +
       `width:${size}px; height:${size * 0.6}px;` +
       `background:${colors[i % colors.length]};` +
       `animation-duration:${1.6 + Math.random() * 1.6}s;` +
@@ -833,7 +835,7 @@ function launchConfetti() {
       `--spin:${(Math.random() * 4 + 2) * 360}deg;`;
     root.appendChild(p);
   }
-  document.body.appendChild(root);
+  host.appendChild(root);
   setTimeout(() => root.remove(), 4000);
 }
 
@@ -2026,7 +2028,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v64";
+const APP_VERSION = "v65";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
