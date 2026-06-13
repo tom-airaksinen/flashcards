@@ -100,6 +100,14 @@ function isDue(card, dir, now) {
   return e.box >= 1 && e.due <= now;
 }
 
+// Förfallen att öva NU givet vald riktning. Räkning av "dags att öva" och själva
+// passet måste använda SAMMA riktningslogik – annars kan taggen visa t.ex. 10
+// (förfallna i b2f) medan ett f2b-pass inte hittar något ("ur synk").
+function isDueNow(card, dirMode, now) {
+  if (dirMode === "mixed") return isDue(card, "f2b", now) || isDue(card, "b2f", now);
+  return isDue(card, dirMode, now);
+}
+
 // grade: "fail" | "good" | "easy" | "hard"
 function gradeCard(card, dir, grade) {
   const e = getEntry(card, dir);
@@ -389,13 +397,14 @@ function openSubject(id) {
 
 function dueCountForLessons(lessons) {
   const now = Date.now();
+  const dirMode = dirSelect.value; // räkna i vald riktning (matchar vad passet ger)
   // Dagens nya ord (låda 0) räknas också – men de väljs per ämne, så vi
   // begränsar setet till de lektioner vi räknar på.
   const newSet = new Set(todaysNewCards(currentSubject).map((c) => c.id));
   let n = 0;
   lessons.forEach((l) =>
     l.cards.forEach((c) => {
-      if (isDue(c, "f2b", now) || isDue(c, "b2f", now) || newSet.has(c.id)) n++;
+      if (isDueNow(c, dirMode, now) || newSet.has(c.id)) n++;
     })
   );
   return n;
@@ -694,7 +703,7 @@ function startDueSession(continuing = false) {
   const inDue = new Set();
   currentSubject.lessons.forEach((l) =>
     l.cards.forEach((c) => {
-      if ((isDue(c, "f2b", now) || isDue(c, "b2f", now)) && !runSeen.has(c.id)) {
+      if (isDueNow(c, dirMode, now) && !runSeen.has(c.id)) {
         due.push(c); inDue.add(c.id);
       }
     })
@@ -769,12 +778,13 @@ const DONE_LABELS = ["Grymt!", "Nice!", "Hell yeah!", "Snyggt!", "Kanon!", "Topp
 function remainingForContinue(cont) {
   const now = Date.now();
   if (cont.kind === "due") {
+    const dirMode = dirSelect.value;
     const newSet = new Set(todaysNewCards(currentSubject).map((c) => c.id));
     let n = 0;
     currentSubject.lessons.forEach((l) =>
       l.cards.forEach((c) => {
         if (runSeen.has(c.id)) return;
-        if (isDue(c, "f2b", now) || isDue(c, "b2f", now) || newSet.has(c.id)) n++;
+        if (isDueNow(c, dirMode, now) || newSet.has(c.id)) n++;
       })
     );
     return n;
@@ -2028,7 +2038,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v65";
+const APP_VERSION = "v66";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
