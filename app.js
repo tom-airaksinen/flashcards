@@ -762,7 +762,11 @@ function pickDir(dirMode) {
 
 async function startLessonSession(lessonId, force = false, continuing = false) {
   const lesson = currentSubject.lessons.find((l) => l.id === lessonId);
-  if (!lesson || !lesson.cards.length) return;
+  if (!lesson) return;
+  if (!lesson.cards.length) {
+    toast("Inga ord att öva på än. Gå in i lektionen med pilknappen för att börja lägga till innehåll", 4000);
+    return;
+  }
   if (!continuing) runSeen = new Set(); // ny runda
   const dirMode = dirSelect.value;
   // Bara ord som är aktiva idag: nya + de man svarat fel/hopplöst på (due <= nu).
@@ -1618,13 +1622,13 @@ const COPY_ICON_SVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="non
 const CHECK_ICON_SVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>`;
 
 // Tydlig, flytande bekräftelse längst ner
-function toast(msg) {
+function toast(msg, ms = 1700) {
   const t = document.createElement("div");
   t.className = "toast";
   t.textContent = msg;
   document.body.appendChild(t);
   requestAnimationFrame(() => t.classList.add("show"));
-  setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 250); }, 1700);
+  setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 250); }, ms);
 }
 
 // Kopiera text till urklipp (med fallback för äldre webbläsare). Visar kvittens.
@@ -2344,7 +2348,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v81";
+const APP_VERSION = "v82";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
