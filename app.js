@@ -541,7 +541,11 @@ function renderLessons() {
       )
     : currentSubject.lessons;
   if (!lessonsToShow.length) {
-    list.innerHTML = `<p class="empty">Inga lektioner matchar "${esc(filter)}".</p>`;
+    const raw = ($("lessons-search").value || "").trim();
+    const canLookUp = !!subjectLang(currentSubject); // uppslag kräver att ämnet har ett språk
+    list.innerHTML = `<p class="empty">Inga lektioner matchar "${esc(filter)}".</p>`
+      + (canLookUp ? `<p class="empty"><button type="button" class="link-action" id="lookup-add">🔎 Slå upp &amp; lägg till "${esc(raw)}"</button></p>` : "");
+    if (canLookUp) $("lookup-add").onclick = () => openTranslate(null, raw);
     return;
   }
   list.innerHTML = lessonsToShow
@@ -1859,7 +1863,7 @@ function matchCase(src, target) {
   return t; // blandat skiftläge – lämna som tjänsten gav
 }
 
-function openTranslate(defaultLessonId) {
+function openTranslate(defaultLessonId, prefill) {
   if (!currentSubject) return;
   const fullLang = subjectLang(currentSubject);
   const foreignCode = fullLang.slice(0, 2);
@@ -1933,6 +1937,9 @@ function openTranslate(defaultLessonId) {
   }
   m.querySelector("#t-lookup").onclick = lookup;
   srcI.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); lookup(); } });
+
+  // Förifyll sökordet (svenska → utländskt) och slå upp direkt – då behöver man bara välja lektion.
+  if (prefill) { srcI.value = prefill; lookup(); }
 
   m.querySelector("#m-cancel").onclick = closeModal;
   m.querySelector("#t-add").onclick = () => {
@@ -2291,7 +2298,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v77";
+const APP_VERSION = "v78";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

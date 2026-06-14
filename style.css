@@ -154,6 +154,11 @@ body {
 }
 #due-btn { background: var(--easy); color: #0d1426; }
 .empty { color: var(--muted); padding: 24px 16px; text-align: center; }
+.empty + .empty { padding-top: 0; }
+.link-action {
+  background: none; border: none; padding: 0; font: inherit; cursor: pointer;
+  color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+}
 .version-tag { margin-top: auto; text-align: center; color: var(--muted); font-size: 0.7rem; opacity: 0.55; padding: 10px 0 16px; }
 
 /* Riktning + kort per pass – pills med utfällbar väljare (lektionsskärmen) */
