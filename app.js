@@ -1871,6 +1871,13 @@ async function startHandsfree() {
   // dialogen blockade, och man trodde att den hörde en. Aktivera knappen först när
   // åtkomst är klar, så inget låtsas lyssna under dialogen.
   if (!hfMicGranted && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    // iOS låser talsyntesen tills den körts i en användargest. getUserMedia nedan är
+    // async, så EFTER await är vi utanför gesten → första ordet lästes inte upp (men
+    // funkade gång 2, då åtkomst redan fanns och ingen await behövdes). Lås därför upp
+    // TTS synkront HÄR, i tryck-gesten, med ett tyst uttalande innan vi väntar.
+    if ("speechSynthesis" in window) {
+      try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch (_) {}
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach((t) => t.stop()); // behöver inte strömmen – taligenkänningen sköter sin egen
@@ -2073,7 +2080,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v68";
+const APP_VERSION = "v69";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
