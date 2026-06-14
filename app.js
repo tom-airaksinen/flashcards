@@ -453,7 +453,7 @@ function renderSubjects() {
 
   // Ingen profil vald (t.ex. ny enhet) → tomt läge
   if (!currentUser) {
-    list.innerHTML = `<p class="empty">Vem är du? Välj högst upp 👆</p>`;
+    list.innerHTML = `<p class="empty">Vem är du? Välj här 👆</p>`;
     return;
   }
   // Bara den valda användarens områden
@@ -551,7 +551,7 @@ function renderLessons() {
       return `<div class="row" data-lesson="${l.id}">
         <span class="row-title">${esc(l.name)}</span>
         <span class="row-meta">${dueTag}${l.cards.length} ord</span>
-        <button class="row-edit" data-edit="${l.id}">✎</button>
+        <button class="row-edit" data-edit="${l.id}" title="Öppna lektionen för att ändra">›</button>
       </div>`;
     })
     .join("");
@@ -2291,7 +2291,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v75";
+const APP_VERSION = "v76";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

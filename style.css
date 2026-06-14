@@ -163,10 +163,10 @@ body {
   background: var(--surface); color: var(--text); border: none; border-radius: 12px;
   padding: 10px 14px; font-family: inherit; cursor: pointer; text-align: left;
 }
-.opt-pill.k { flex: 0 0 32%; }
+.opt-pill.k { flex: 0 0 38%; }
 .opt-pill:active { background: var(--surface-2); }
 .opt-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.opt-lbl { color: var(--muted); font-size: 0.66rem; letter-spacing: 0.04em; }
+.opt-lbl { color: var(--muted); font-size: 0.66rem; letter-spacing: 0.04em; white-space: nowrap; }
 .opt-val { font-size: 0.95rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .opt-car { color: var(--muted); font-size: 0.8rem; flex: none; }
 
@@ -595,14 +595,19 @@ body {
 .row-edit {
   background: var(--surface-2);
   border: none;
-  color: var(--text);
+  color: var(--muted);
   width: 34px; height: 34px;
   border-radius: 9px;
-  font-size: 0.95rem;
+  font-size: 1.5rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 2px; /* optiskt centrera chevronen */
   cursor: pointer;
   flex: none;
 }
-.row-edit:active { background: var(--accent); }
+.row-edit:active { background: var(--accent); color: #fff; }
 
 /* ---- Modal ---- */
 #modal-root {
