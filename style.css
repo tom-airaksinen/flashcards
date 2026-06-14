@@ -63,8 +63,9 @@ body {
    skärmarna respekterar notch/hörn även när de positioneras absolut under glid. */
 #screens { position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 .screen { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-/* Under en övergång ligger båda skärmarna absolut ovanpå varandra och glider. */
-.screen.nav-anim { position: absolute; inset: 0; will-change: transform; }
+/* Under en övergång ligger båda skärmarna absolut ovanpå varandra och glider.
+   background krävs: utan den lyser den gamla skärmen igenom den nya ("skräp"). */
+.screen.nav-anim { position: absolute; inset: 0; will-change: transform, opacity; background: var(--bg); }
 
 .app-header {
   display: flex;

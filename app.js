@@ -376,19 +376,23 @@ function show(screenName) {
   inEl.style.transition = "none";
   outEl.style.transition = "none";
   inEl.style.transform = `translateX(${dir > 0 ? 100 : -100}%)`;
+  inEl.style.opacity = "1";
   outEl.style.transform = "none";
+  outEl.style.opacity = "1";
   void inEl.offsetWidth; // tvinga startläge
   inEl.style.transition = `transform ${NAV_DUR}ms ${NAV_EASE}`;
-  outEl.style.transition = `transform ${NAV_DUR}ms ${NAV_EASE}`;
+  // Gamla skärmen glider undan OCH fejdar ut, så inget gammalt skräp ligger kvar och stör.
+  outEl.style.transition = `transform ${NAV_DUR}ms ${NAV_EASE}, opacity ${NAV_DUR}ms ease-out`;
   inEl.style.transform = "none";
-  outEl.style.transform = `translateX(${dir > 0 ? -28 : 28}%)`;
+  outEl.style.transform = `translateX(${dir > 0 ? -22 : 22}%)`;
+  outEl.style.opacity = "0";
   shownScreen = screenName;
 
   const cleanup = () => {
     navCleanup = null;
     [inEl, outEl].forEach((el) => {
       el.classList.remove("nav-anim");
-      el.style.transition = ""; el.style.transform = ""; el.style.zIndex = "";
+      el.style.transition = ""; el.style.transform = ""; el.style.zIndex = ""; el.style.opacity = "";
     });
     setOnlyScreen(screenName);
   };
@@ -2210,7 +2214,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v71";
+const APP_VERSION = "v72";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
