@@ -1613,11 +1613,25 @@ function flash(msg, ms = 3000) {
   setTimeout(() => showStatus(null), ms);
 }
 
+// Stiliserade ikoner (två omlott-rutor = kopiera; bock = klar)
+const COPY_ICON_SVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>`;
+const CHECK_ICON_SVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>`;
+
+// Tydlig, flytande bekräftelse längst ner
+function toast(msg) {
+  const t = document.createElement("div");
+  t.className = "toast";
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => t.classList.add("show"));
+  setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 250); }, 1700);
+}
+
 // Kopiera text till urklipp (med fallback för äldre webbläsare). Visar kvittens.
 function copyText(text, btn) {
   const done = () => {
-    flash("Kopierat ✓", 1500);
-    if (btn) { btn.textContent = "✓"; setTimeout(() => { btn.textContent = "📋"; }, 1200); }
+    toast("Kopierat till urklipp ✓");
+    if (btn) { btn.innerHTML = CHECK_ICON_SVG; setTimeout(() => { btn.innerHTML = COPY_ICON_SVG; }, 1300); }
   };
   const fail = () => flash("Kunde inte kopiera – markera och kopiera manuellt", 3000);
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1772,12 +1786,13 @@ function renderEditor() {
   $("editor-title").textContent = lesson.name;
   const list = $("editor-list");
   if (!lesson.cards.length) {
-    const aiPrompt = `Kan du ge mig 20 bra ord och fraser som handlar om "${lesson.name}" på ${currentForeignLabel()}? Formatet ska vara utländskt ord/fras;svensk översättning, en per rad`;
+    const lang = currentForeignLabel();
+    const aiPrompt = `Kan du ge mig 20 bra ord och fraser som handlar om "${lesson.name}" på ${lang}? Formatet ska vara ord/fras på ${lang};svensk översättning, en per rad`;
     list.innerHTML = `<p class="empty">Inga ord än. Tryck ＋ Lägg till ord.</p>
       <div class="ai-tip">
         <div class="ai-tip-head">
           <span>💬 Tips: be en AI om ord</span>
-          <button class="ai-copy" id="ai-copy" type="button" title="Kopiera prompten">📋</button>
+          <button class="ai-copy" id="ai-copy" type="button" title="Kopiera prompten">${COPY_ICON_SVG}</button>
         </div>
         <p class="ai-tip-prompt">${esc(aiPrompt)}</p>
         <p class="ai-tip-foot">Klistra in svaret via ＋ Lägg till ord.</p>
@@ -2329,7 +2344,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v80";
+const APP_VERSION = "v81";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
