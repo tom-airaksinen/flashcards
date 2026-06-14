@@ -95,6 +95,37 @@ function subjectFlag(s) {
   return LANG_FLAG[subjectLang(s)] || "";
 }
 
+// Svenskt språknamn för en BCP-47-kod (t.ex. "it-IT" → "Italienska") via Intl.
+function langLabel(code) {
+  if (!code) return "Inget / ej språk";
+  const base = String(code).split("-")[0].toLowerCase();
+  try {
+    const n = new Intl.DisplayNames(["sv"], { type: "language" }).of(base);
+    if (n && n.toLowerCase() !== base) return n.charAt(0).toUpperCase() + n.slice(1);
+  } catch (_) {}
+  return code;
+}
+
+// Språkalternativ för väljaren: alla språk enheten faktiskt kan uttala (Web Speech-
+// röster), deduppade per språk, svenska namn, alfabetiskt, "Inget / ej språk" överst.
+function langOptionsForPicker(selected) {
+  const byBase = new Map(); // 'it' -> 'it-IT'
+  const voices = ("speechSynthesis" in window) ? (speechSynthesis.getVoices() || []) : [];
+  voices.forEach((v) => {
+    if (!v.lang) return;
+    const code = v.lang.replace("_", "-");
+    const base = code.slice(0, 2).toLowerCase();
+    if (base && !byBase.has(base)) byBase.set(base, code);
+  });
+  // Fallback om rösterna inte hunnit laddas än: kuraterad grundlista
+  if (!byBase.size) LANG_OPTIONS.forEach((o) => { if (o.code) byBase.set(o.code.slice(0, 2).toLowerCase(), o.code); });
+  // Behåll nuvarande val exakt (så koden inte tyst ändras när man sparar)
+  if (selected) byBase.set(selected.slice(0, 2).toLowerCase(), selected);
+  const items = [...byBase.values()].map((code) => ({ value: code, label: langLabel(code) }));
+  items.sort((a, b) => a.label.localeCompare(b.label, "sv"));
+  return [{ value: "", label: "Inget / ej språk" }, ...items];
+}
+
 // =========================================================================
 //  SRS-lager (localStorage) – graderad Leitner
 // =========================================================================
@@ -1492,7 +1523,7 @@ function askSubject(title, name = "", lang = "", allowDelete = false, owner = ""
         <button class="btn-secondary" id="m-cancel">Avbryt</button>
         <button class="btn-primary" id="m-ok">Spara</button>
       </div>${delBtn}`);
-    const langSel = buildSelect(LANG_OPTIONS.map((o) => ({ value: o.code, label: o.label })), lang);
+    const langSel = buildSelect(langOptionsForPicker(lang), lang);
     m.querySelector("#m-lang-mount").appendChild(langSel.el);
     const ownerSel = buildSelect(USERS.map((u) => ({ value: u.id, label: u.name })), owner || currentUser || USERS[0].id);
     m.querySelector("#m-owner-mount").appendChild(ownerSel.el);
@@ -1740,11 +1771,10 @@ function openEditor(lessonId) {
   renderEditor();
 }
 
-// Språknamn för sorteringsetiketter (gemener), t.ex. "italienska"
+// Språknamn för etiketter (gemener), t.ex. "italienska"
 function currentForeignLabel() {
   const lang = subjectLang(currentSubject);
-  const opt = LANG_OPTIONS.find((o) => o.code === lang);
-  return opt && opt.code ? opt.label.toLowerCase() : "utländska";
+  return lang ? langLabel(lang).toLowerCase() : "utländska";
 }
 
 const sortCollator = new Intl.Collator("sv", { sensitivity: "base" });
@@ -1921,7 +1951,7 @@ function openTranslate(defaultLessonId, prefill) {
     flash("Sätt ett språk på ämnet först (redigera ämnet ✎)", 4000);
     return;
   }
-  const foreignLabel = (LANG_OPTIONS.find((o) => o.code === fullLang) || {}).label || "Utländska";
+  const foreignLabel = fullLang ? langLabel(fullLang) : "Utländska";
   let dir = "sv2for";
 
   const lessonItems = currentSubject.lessons
@@ -2348,7 +2378,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v82";
+const APP_VERSION = "v83";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
