@@ -465,6 +465,7 @@ body {
 #congrats-screen h2 { font-size: 1.6rem; }
 #congrats-sub { color: var(--muted); }
 #congrats-screen .primary-btn { margin-top: 12px; min-width: 160px; position: relative; z-index: 1; }
+.congrats-undo-hint { color: var(--muted); font-size: 0.78rem; margin-top: 10px; padding: 0 24px; position: relative; z-index: 1; line-height: 1.4; }
 .congrats-emoji { animation: congrats-pop 0.5s ease-out; }
 @keyframes congrats-pop {
   0% { transform: scale(0.3); opacity: 0; }

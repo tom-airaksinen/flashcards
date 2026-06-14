@@ -356,6 +356,8 @@ function setOnlyScreen(screenName) {
 
 function show(screenName) {
   const from = shownScreen;
+  // Lämnar man Klar-skärmen (Grymt!/Fortsätt) avbryts röstlyssning och ångra-möjligheten.
+  if (from === "congrats" && screenName !== "congrats") { stopCongratsListen(); lastSession = null; }
   if (navCleanup) navCleanup(); // snabbspola ev. pågående glid innan nästa
   const fromEl = screens[from];
   // Ingen animation: samma skärm, okänd ursprungsskärm, reducerad rörelse, eller
@@ -846,7 +848,12 @@ function remainingForContinue(cont) {
   return lesson.cards.filter((c) => !runSeen.has(c.id) && (cont.forced || activeToday(c))).length;
 }
 
+// Sparas så man kan ångra sista svaret även EFTER att passet tagit slut (Klar-skärmen).
+let lastSession = null;
+let lastSessionWasHF = false;
+
 function finishSession() {
+  const wasHF = handsfreeActive;
   stopHandsfree();
   const cont = session ? { limit: session.continueLimit, kind: session.kind, lessonId: session.lessonId, forced: session.forced } : null;
   $("congrats-sub").textContent = (session && session.note) || `${session ? session.label : ""} – klar! 🎉`;
@@ -866,10 +873,85 @@ function finishSession() {
     contBtn.classList.add("hidden");
   }
 
+  // Behåll passet så det går att ångra sista svaret från Klar-skärmen.
+  lastSession = session;
+  lastSessionWasHF = wasHF;
   session = null;
+
+  // Hint om att man kan ta tillbaka sista svaret (skaka alltid; röst om handsfree).
+  const undoHint = $("congrats-undo-hint");
+  if (undoStack.length) {
+    undoHint.textContent = wasHF
+      ? 'Fel på sista? Säg "ångra" eller skaka telefonen.'
+      : "Fel på sista? Skaka telefonen för att ta tillbaka.";
+    undoHint.classList.remove("hidden");
+  } else {
+    undoHint.classList.add("hidden");
+  }
+
   show("congrats");
   activeScreen = "congrats";
   launchConfetti();
+  if (wasHF) startCongratsListen(); // lyssna efter "ångra" i röstläge
+}
+
+// Ångra sista svaret från Klar-skärmen: återuppta passet och kör vanliga undo.
+function undoFromCongrats() {
+  if (activeScreen !== "congrats" || !lastSession || !undoStack.length) return false;
+  if (navCleanup) navCleanup();
+  stopCongratsListen();
+  const resumeHF = lastSessionWasHF;
+  session = lastSession;
+  lastSession = null;
+  $("congrats-undo-hint").classList.add("hidden");
+  setOnlyScreen("training"); // direkt byte – kortets in-glidning är feedbacken
+  shownScreen = "training";
+  activeScreen = "training";
+  updateAutospeakRow();
+  if (resumeHF) {
+    // Återuppta handsfree: loadCard (i undoLastAnswer) läser då upp kortet och lyssnar.
+    handsfreeActive = true;
+    hfBtn.classList.add("active");
+    if ("wakeLock" in navigator) navigator.wakeLock.request("screen").then((l) => { hfWakeLock = l; }).catch(() => {});
+  }
+  // Sista svarets fly-out kan ha lämnat animating=true en kort stund; på Klar-skärmen
+  // är den animationen redan klar visuellt, så nollställ så undoLastAnswer inte blockeras.
+  animating = false;
+  return undoLastAnswer();
+}
+
+// Liten röstlyssnare på Klar-skärmen (handsfree): bara kommandot "ångra".
+let congratsRec = null, congratsListening = false, congratsListenTimer = null;
+function startCongratsListen() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR || !undoStack.length) return;
+  congratsListening = true;
+  clearTimeout(congratsListenTimer);
+  congratsListenTimer = setTimeout(stopCongratsListen, 25000); // håll inte mikrofonen för evigt
+  const startRec = () => {
+    if (!congratsListening) return;
+    const rec = new SR();
+    congratsRec = rec;
+    rec.lang = "sv-SE"; rec.continuous = false; rec.interimResults = false; rec.maxAlternatives = 3;
+    rec.onresult = (e) => {
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (!e.results[i].isFinal) continue;
+        for (let j = 0; j < e.results[i].length; j++) {
+          const t = e.results[i][j].transcript.toLowerCase();
+          if (t.includes("ångra") || t.includes("ongra")) { undoFromCongrats(); return; }
+        }
+      }
+    };
+    rec.onerror = (e) => { if (e.error === "not-allowed") stopCongratsListen(); };
+    rec.onend = () => { if (congratsListening) setTimeout(() => { if (congratsListening) { congratsRec = null; startRec(); } }, 250); };
+    try { rec.start(); } catch (_) {}
+  };
+  startRec();
+}
+function stopCongratsListen() {
+  congratsListening = false;
+  clearTimeout(congratsListenTimer);
+  if (congratsRec) { try { congratsRec.abort(); } catch (_) {} congratsRec = null; }
 }
 
 function launchConfetti() {
@@ -1005,7 +1087,8 @@ let shakeLast = { x: 0, y: 0, z: 0, t: 0 };
 let lastShakeTrigger = 0;
 const SHAKE_THRESHOLD = 1800; // empiriskt; högt så vanlig gång/rörelse inte triggar – kräver medvetet kraftig skak
 function onMotion(e) {
-  if (activeScreen !== "training") return;
+  // Skaka för att ångra fungerar både under passet och på Klar-skärmen (sista svaret).
+  if (activeScreen !== "training" && activeScreen !== "congrats") return;
   const a = e.accelerationIncludingGravity;
   if (!a) return;
   const t = Date.now();
@@ -1015,7 +1098,8 @@ function onMotion(e) {
   shakeLast = { x: a.x || 0, y: a.y || 0, z: a.z || 0, t };
   if (speed > SHAKE_THRESHOLD && t - lastShakeTrigger > 1200) {
     lastShakeTrigger = t;
-    undoLastAnswer();
+    if (activeScreen === "congrats") undoFromCongrats();
+    else undoLastAnswer();
   }
 }
 
@@ -2126,7 +2210,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v70";
+const APP_VERSION = "v71";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
