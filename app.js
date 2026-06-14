@@ -861,7 +861,16 @@ function startDueSession(continuing = false) {
   beginSession({ queue, dirMode, label: "Dags att öva", note, kind: "due", continueLimit: (lim && due.length > queue.length) ? lim : 0 });
 }
 
+// Ta bort fokus från textfält (och stäng tangentbordet) – så iOS inte har någon
+// pågående "skrivning" att ångra, vilket annars triggar systemets "Skaka för att
+// ångra"-ruta samtidigt som vår egen skak-ångra.
+function blurActiveInput() {
+  const el = document.activeElement;
+  if (el && typeof el.blur === "function" && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) el.blur();
+}
+
 function beginSession({ queue, dirMode, label, note, kind, lessonId, forced, continueLimit }) {
+  blurActiveInput();
   // nollställ ev. kvarvarande svep-feedback så den inte blinkar till vid sessionsstart
   feedbackEl.classList.remove("show");
   feedbackEl.textContent = "";
@@ -2378,7 +2387,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v83";
+const APP_VERSION = "v84";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
