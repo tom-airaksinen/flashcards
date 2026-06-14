@@ -638,8 +638,11 @@ function esc(s) {
 const card = $("card");
 const cardInner = card.querySelector(".card-inner");
 const cardFront = $("card-front");
+const cardFrontText = $("card-front-text");
+const cardFrontHint = $("card-front-hint");
 const cardAnswer = $("card-answer");
 const cardHint = $("card-hint");
+const hintBtn = $("hint-btn");
 const dirSelect = $("dir-select");
 const progressPill = $("progress-pill");
 const feedbackEl = $("swipe-feedback");
@@ -802,15 +805,17 @@ function loadCard(forceDir) {
   session.current = c;
   session.shownDir = dir;
   const showFrontFirst = dir === "f2b";
-  cardFront.textContent = showFrontFirst ? c.front : c.back;
+  cardFrontText.textContent = showFrontFirst ? c.front : c.back;
   cardAnswer.textContent = showFrontFirst ? c.back : c.front;
   // Minnesregeln är en svensk hjälp för det UTLÄNDSKA ordet → visa bara när svaret
   // är utländskt (b2f). Kör man TILL svenska vore den en gratisledtråd – göm den.
   cardHint.textContent = !showFrontFirst ? (c.hint || "") : "";
+  cardFrontHint.textContent = ""; cardFrontHint.classList.add("hidden"); // ny ledtråd döljs tills lampan trycks
   updateProgress();
   updateStack();
   showSpeakSoon(300);
   editCardBtn.classList.remove("hidden");
+  updateHintBtn();
   if (handsfreeActive) { clearTimeout(hfLoadCardTimer); hfLoadCardTimer = setTimeout(() => { if (handsfreeActive) hfSpeakFront(); }, 400); }
 }
 
@@ -1174,6 +1179,24 @@ function speakCurrent() {
 speakBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
 speakBtn.addEventListener("click", (e) => { e.stopPropagation(); speakCurrent(); });
 
+// Glödlampan: visas på prompt-sidan när man kör Från svenska (b2f) och kortet har en
+// minnesregel. Tryck → visar BARA regeln (ledtråd) utan att avslöja svaret.
+function updateHintBtn() {
+  const c = session && session.current;
+  const ok = activeScreen === "training" && !!(c && c.hint) && session && session.shownDir === "b2f"
+    && !card.classList.contains("flipped") && cardFrontHint.classList.contains("hidden");
+  hintBtn.classList.toggle("hidden", !ok);
+}
+hintBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
+hintBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const c = session && session.current;
+  if (!c || !c.hint) return;
+  cardFrontHint.textContent = c.hint;
+  cardFrontHint.classList.remove("hidden");
+  updateHintBtn(); // regeln syns nu → dölj lampan
+});
+
 // Toggle "Automatisk uppläsning" längst ner – styr autoSpeak
 const autospeakRow = $("autospeak-row");
 const autospeakToggle = $("autospeak-toggle");
@@ -1223,9 +1246,11 @@ async function editCurrentCard() {
   updateCard(currentSubject.id, lid, c.id, res.front, res.back, res.hint);
   // uppdatera visat kort direkt
   const showFrontFirst = session.shownDir === "f2b";
-  cardFront.textContent = showFrontFirst ? c.front : c.back;
+  cardFrontText.textContent = showFrontFirst ? c.front : c.back;
   cardAnswer.textContent = showFrontFirst ? c.back : c.front;
-  cardHint.textContent = c.hint || "";
+  cardHint.textContent = !showFrontFirst ? (c.hint || "") : "";
+  cardFrontHint.textContent = ""; cardFrontHint.classList.add("hidden");
+  updateHintBtn();
 }
 
 // =========================================================================
@@ -1243,7 +1268,7 @@ function setDrag(dx, dy) {
 function snapBack() {
   card.classList.add("snapping");
   card.style.transform = "";
-  card.addEventListener("transitionend", () => { card.classList.remove("snapping"); updateSpeakBtn(); editCardBtn.classList.remove("hidden"); }, { once: true });
+  card.addEventListener("transitionend", () => { card.classList.remove("snapping"); updateSpeakBtn(); editCardBtn.classList.remove("hidden"); updateHintBtn(); }, { once: true });
 }
 
 function flyOut(grade) {
@@ -1266,6 +1291,7 @@ card.addEventListener("click", () => {
   if (didSwipe || animating) return;
   card.classList.toggle("flipped");
   showSpeakSoon(460);
+  updateHintBtn(); // dölj lampan när svaret visas, visa igen om man vänder tillbaka
 });
 
 card.addEventListener("pointerdown", (e) => {
@@ -1276,6 +1302,7 @@ card.addEventListener("pointerdown", (e) => {
   didSwipe = false;
   speakBtn.classList.add("hidden"); // dölj direkt när man tar i kortet
   editCardBtn.classList.add("hidden");
+  hintBtn.classList.add("hidden");
   card.setPointerCapture(e.pointerId);
 });
 
@@ -2205,7 +2232,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v73";
+const APP_VERSION = "v74";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

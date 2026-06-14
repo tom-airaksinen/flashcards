@@ -124,9 +124,13 @@
       <div class="card-stack">
         <button id="edit-card-btn" class="hidden" title="Redigera ordet">✎</button>
         <button id="speak-btn" class="hidden" title="Uttala">🔊</button>
+        <button id="hint-btn" class="hidden" title="Visa ledtråd">💡</button>
         <div id="card" class="card">
           <div class="card-inner">
-            <div class="card-front" id="card-front"></div>
+            <div class="card-front" id="card-front">
+              <span id="card-front-text"></span>
+              <span id="card-front-hint" class="card-hint hidden"></span>
+            </div>
             <div class="card-back" id="card-back">
               <span id="card-answer"></span>
               <span id="card-hint" class="card-hint"></span>
