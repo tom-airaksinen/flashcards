@@ -812,7 +812,7 @@ function finishSession() {
   const remaining = cont && cont.limit > 0 ? remainingForContinue(cont) : 0;
   if (remaining > 0) {
     contBtn.textContent = remaining < cont.limit
-      ? `Ta de sista ${remaining} direkt`
+      ? (remaining === 1 ? "Ta det sista direkt" : `Ta de sista ${remaining} direkt`)
       : `Fortsätt med ${cont.limit} till`;
     contBtn.classList.remove("hidden");
     contBtn.onclick = () => (cont.kind === "due" ? startDueSession(true) : startLessonSession(cont.lessonId, cont.forced, true));
@@ -1862,8 +1862,25 @@ hfBtn.addEventListener("click", () => {
   else startHandsfree();
 });
 
-function startHandsfree() {
+let hfMicGranted = false;
+
+async function startHandsfree() {
   if (!session || !session.current) return;
+  // Be om mikrofon DIREKT (inom klick-gesten), INNAN något läses upp. Annars dök
+  // behörighetsdialogen upp först när vi började lyssna – appen sa "lyssnar…" fast
+  // dialogen blockade, och man trodde att den hörde en. Aktivera knappen först när
+  // åtkomst är klar, så inget låtsas lyssna under dialogen.
+  if (!hfMicGranted && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((t) => t.stop()); // behöver inte strömmen – taligenkänningen sköter sin egen
+      hfMicGranted = true;
+    } catch (_) {
+      flash("Mikrofonåtkomst nekades – handsfree behöver mikrofonen.", 4000);
+      return;
+    }
+    if (!session || !session.current) return; // sessionen kan ha hunnit avslutas
+  }
   handsfreeActive = true;
   hfBtn.classList.add("active");
   // Snäpp tillbaka till framsidan om kortet råkar vara flippat
@@ -2056,7 +2073,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v67";
+const APP_VERSION = "v68";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
