@@ -709,7 +709,7 @@ let runSeen = new Set();
 // ---- Antal kort per pass ----
 const SESSION_LIMIT_KEY = "flashcards-session-limit";
 const sessionLimitSel = $("session-limit");
-sessionLimitSel.value = localStorage.getItem(SESSION_LIMIT_KEY) || "0";
+sessionLimitSel.value = localStorage.getItem(SESSION_LIMIT_KEY) || "10"; // default på ny enhet: 10 kort/pass
 sessionLimitSel.addEventListener("change", () => {
   localStorage.setItem(SESSION_LIMIT_KEY, sessionLimitSel.value);
 });
@@ -2291,7 +2291,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v76";
+const APP_VERSION = "v77";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
