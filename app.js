@@ -423,21 +423,12 @@ function renderSubjects() {
       return `<div class="row" data-subject="${s.id}">
         <span class="row-title">${flag ? flag + " " : ""}${esc(s.name)}</span>
         <span class="row-meta">${s.lessons.length} lekt · ${cardCount} ord</span>
-        <button class="row-edit" data-edit="${s.id}">✎</button>
       </div>`;
     })
     .join("");
+  // Ingen penna här – namn/språk redigeras inne i området (✎ uppe på lektionsskärmen).
   list.querySelectorAll(".row").forEach((row) => {
-    row.addEventListener("click", (e) => {
-      if (e.target.classList.contains("row-edit")) return;
-      openSubject(row.dataset.subject);
-    });
-  });
-  list.querySelectorAll(".row-edit").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      editSubject(btn.dataset.edit);
-    });
+    row.addEventListener("click", () => openSubject(row.dataset.subject));
   });
 }
 
@@ -2214,7 +2205,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v72";
+const APP_VERSION = "v73";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
