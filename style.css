@@ -159,6 +159,27 @@ body {
   background: none; border: none; padding: 0; font: inherit; cursor: pointer;
   color: var(--accent); font-weight: 600;
 }
+
+/* AI-tipsruta i tom lektion */
+.ai-tip {
+  margin: 4px 16px; background: var(--surface); border-radius: 14px; padding: 14px;
+  text-align: left;
+}
+.ai-tip-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  color: var(--muted); font-size: 0.82rem; font-weight: 600; margin-bottom: 10px;
+}
+.ai-copy {
+  background: var(--surface-2); border: none; color: var(--text);
+  width: 38px; height: 34px; border-radius: 9px; font-size: 1.05rem; cursor: pointer; flex: none;
+}
+.ai-copy:active { background: var(--accent); }
+.ai-tip-prompt {
+  background: var(--surface-2); border-radius: 10px; padding: 11px 12px;
+  color: var(--text); font-size: 0.9rem; line-height: 1.45;
+  white-space: pre-wrap; -webkit-user-select: text; user-select: text;
+}
+.ai-tip-foot { color: var(--muted); font-size: 0.76rem; margin-top: 8px; }
 .version-tag { margin-top: auto; text-align: center; color: var(--muted); font-size: 0.7rem; opacity: 0.55; padding: 10px 0 16px; }
 
 /* Riktning + kort per pass – pills med utfällbar väljare (lektionsskärmen) */

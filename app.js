@@ -1613,6 +1613,27 @@ function flash(msg, ms = 3000) {
   setTimeout(() => showStatus(null), ms);
 }
 
+// Kopiera text till urklipp (med fallback för äldre webbläsare). Visar kvittens.
+function copyText(text, btn) {
+  const done = () => {
+    flash("Kopierat ✓", 1500);
+    if (btn) { btn.textContent = "✓"; setTimeout(() => { btn.textContent = "📋"; }, 1200); }
+  };
+  const fail = () => flash("Kunde inte kopiera – markera och kopiera manuellt", 3000);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(fail);
+    return;
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    ok ? done() : fail();
+  } catch (_) { fail(); }
+}
+
 // =========================================================================
 //  Firebase-skrivningar (CRUD)
 // =========================================================================
@@ -1751,7 +1772,17 @@ function renderEditor() {
   $("editor-title").textContent = lesson.name;
   const list = $("editor-list");
   if (!lesson.cards.length) {
-    list.innerHTML = `<p class="empty">Inga ord än. Tryck ＋ Lägg till ord.</p>`;
+    const aiPrompt = `Kan du ge mig 20 bra ord och fraser som handlar om "${lesson.name}" på ${currentForeignLabel()}? Formatet ska vara utländskt ord/fras;svensk översättning, en per rad`;
+    list.innerHTML = `<p class="empty">Inga ord än. Tryck ＋ Lägg till ord.</p>
+      <div class="ai-tip">
+        <div class="ai-tip-head">
+          <span>💬 Tips: be en AI om ord</span>
+          <button class="ai-copy" id="ai-copy" type="button" title="Kopiera prompten">📋</button>
+        </div>
+        <p class="ai-tip-prompt">${esc(aiPrompt)}</p>
+        <p class="ai-tip-foot">Klistra in svaret via ＋ Lägg till ord.</p>
+      </div>`;
+    $("ai-copy").onclick = () => copyText(aiPrompt, $("ai-copy"));
     return;
   }
   const sorted = sortedCards(lesson);
@@ -2298,7 +2329,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v79";
+const APP_VERSION = "v80";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
