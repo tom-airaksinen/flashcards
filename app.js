@@ -34,7 +34,7 @@ let currentLessonId = null;        // lektion öppen i editorn
 // Varje område har en ägare (owner). Vald profil filtrerar vilka områden som visas.
 // Lektioner ärver områdets ägare automatiskt. Lätt att utöka med fler profiler.
 const USERS = [
-  // lock = enkelt lösenordslås vid byte TILL profilen (ej riktig säkerhet – ligger i klienten)
+  // lock = enkelt lösenordslås vid byte TILL profilen (asså jag fattar att du som snokar här hittar lösenordet enkelt, men det här är lite på skoj, okej?!)
   { id: "tom", name: "Tom", lock: "phl1ppzter" },
   { id: "hedvig", name: "Hedvig", lock: "horselove" },
   { id: "guest", name: "Gäst" },
@@ -215,7 +215,13 @@ function isNewCard(c) {
 // och ämne, slumpat proportionellt över lektionerna. Uppsättningen väljs en
 // gång per dag och persisteras (hård gräns – ingen påfyllning samma dag).
 const NEW_INTRO_KEY = "flippa-newintro-v1";
-const NEW_PER_DAY = 10;
+const NEW_PER_DAY_KEY = "flippa-new-per-day";
+// Antal nya kort per dag (inställbart, default 10). 0 = pausa nya ord. Eftersom dagens
+// uppsättning väljs en gång och låses, slår en ändring igenom först nästa dag.
+function newPerDay() {
+  const n = parseInt(localStorage.getItem(NEW_PER_DAY_KEY), 10);
+  return Number.isFinite(n) ? n : 10;
+}
 
 function todayStr() {
   return new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD i lokal tid
@@ -249,7 +255,7 @@ function todaysNewCards(subject) {
     const buckets = subject.lessons.map((l) => l.cards.filter(isNewCard));
     const counts = buckets.map((b) => b.length);
     const totalNew = counts.reduce((a, b) => a + b, 0);
-    const alloc = allocProportional(counts, Math.min(NEW_PER_DAY, totalNew));
+    const alloc = allocProportional(counts, Math.min(newPerDay(), totalNew));
     const ids = [];
     buckets.forEach((cards, i) => {
       const shuffled = cards
@@ -788,7 +794,9 @@ function syncOptionPills() {
   $("dir-val").textContent = dirOpt ? dirOpt.text : "Från svenska";
   $("limit-val").textContent = limitLabel(sessionLimitSel.value);
   dirChooser.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === dirSelect.value));
-  limitChooser.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === sessionLimitSel.value));
+  $("limit-segs").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === sessionLimitSel.value));
+  const npd = String(newPerDay());
+  $("newperday-segs").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === npd));
 }
 dirPill.onclick = () => { limitChooser.classList.add("hidden"); dirChooser.classList.toggle("hidden"); };
 limitPill.onclick = () => { dirChooser.classList.add("hidden"); limitChooser.classList.toggle("hidden"); };
@@ -803,6 +811,12 @@ $("limit-segs").addEventListener("click", (e) => {
   sessionLimitSel.value = b.dataset.v;
   sessionLimitSel.dispatchEvent(new Event("change")); // sparar SESSION_LIMIT_KEY
   syncOptionPills(); closeChoosers();
+});
+// Nya kort per dag – stäng INTE väljaren så noteringen ("gäller från imorgon") syns
+$("newperday-segs").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  localStorage.setItem(NEW_PER_DAY_KEY, b.dataset.v);
+  syncOptionPills();
 });
 syncOptionPills();
 
@@ -2105,6 +2119,7 @@ function buildBackup() {
     exportedAt: new Date().toISOString(),
     srs: srs,
     sessionLimit: localStorage.getItem(SESSION_LIMIT_KEY) || "0",
+    newPerDay: localStorage.getItem(NEW_PER_DAY_KEY) || "10",
   }, null, 0);
 }
 
@@ -2179,6 +2194,7 @@ function openImport() {
       localStorage.setItem(SESSION_LIMIT_KEY, String(obj.sessionLimit));
       sessionLimitSel.value = String(obj.sessionLimit);
     }
+    if (obj.newPerDay != null) localStorage.setItem(NEW_PER_DAY_KEY, String(obj.newPerDay));
     closeModal();
     flash(`Importerade statistik för ${n} kort ✓`, 2500);
     renderCurrentScreen();
@@ -2430,7 +2446,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v87";
+const APP_VERSION = "v88";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

@@ -228,6 +228,8 @@ body {
 }
 .opt-segs.wrap button { flex: 1 0 26%; }
 .opt-segs button.on { background: var(--accent); color: #fff; font-weight: 600; }
+.opt-sub { color: var(--muted); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; margin: 12px 2px 8px; }
+.opt-note { color: var(--muted); font-size: 0.72rem; margin: 8px 2px 0; line-height: 1.4; }
 
 .primary-btn {
   margin: 4px 16px 12px;
