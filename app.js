@@ -2161,7 +2161,7 @@ function openTranslate(defaultLessonId, prefill) {
     </div>
     <label id="t-src-label">Svenska</label>
     <div class="t-row">
-      <input type="text" id="t-src" autocomplete="off" autocapitalize="none" autocorrect="off" placeholder="t.ex. blomkål" />
+      <input type="text" id="t-src" autocomplete="off" autocapitalize="none" autocorrect="off" placeholder="t.ex. nord;syd;väst" />
       <button class="btn-secondary t-lookup" id="t-lookup">🔎</button>
     </div>
     <label id="t-dst-label">${esc(foreignLabel)}</label>
@@ -2173,7 +2173,7 @@ function openTranslate(defaultLessonId, prefill) {
       <button class="btn-secondary" id="m-cancel">Stäng</button>
       <button class="btn-primary" id="t-add">Lägg till</button>
     </div>
-    <p class="modal-hint">Översättning via MyMemory – kontrollera & justera vid behov.</p>`);
+    <p class="modal-hint">Flera ord? Separera med <b>;</b> (t.ex. <code>nord;syd;väst</code>) så blir det en glosa var. Översättning via MyMemory – kontrollera & justera vid behov.</p>`);
 
   const srcI = m.querySelector("#t-src");
   const dstI = m.querySelector("#t-dst");
@@ -2194,17 +2194,21 @@ function openTranslate(defaultLessonId, prefill) {
     const sv = dir === "sv2for";
     m.querySelector("#t-src-label").textContent = sv ? "Svenska" : foreignLabel;
     m.querySelector("#t-dst-label").textContent = sv ? foreignLabel : "Svenska";
-    srcI.placeholder = sv ? "t.ex. blomkål" : "t.ex. cavolfiore";
+    srcI.placeholder = sv ? "t.ex. nord;syd;väst" : "t.ex. nord;sud;ovest";
   }
   m.querySelectorAll("#t-dir button").forEach((b) => (b.onclick = () => { dir = b.dataset.dir; applyDir(); srcI.focus(); }));
 
+  const splitTerms = (s) => (s || "").split(";").map((x) => x.trim()).filter(Boolean);
+
   async function lookup() {
-    const text = srcI.value.trim();
-    if (!text) return;
+    const parts = splitTerms(srcI.value);
+    if (!parts.length) return;
     const [from, to] = dir === "sv2for" ? ["sv", foreignCode] : [foreignCode, "sv"];
     dstI.value = "…";
     try {
-      dstI.value = matchCase(text, await doTranslate(text, from, to));
+      const out = [];
+      for (const p of parts) out.push(matchCase(p, await doTranslate(p, from, to))); // ett ord i taget
+      dstI.value = out.join("; "); // flera → samma ordning, separerade med ;
     } catch (e) {
       dstI.value = "";
       flash("Översättning misslyckades: " + e.message, 4000);
@@ -2218,19 +2222,26 @@ function openTranslate(defaultLessonId, prefill) {
 
   m.querySelector("#m-cancel").onclick = closeModal;
   m.querySelector("#t-add").onclick = () => {
-    const src = srcI.value.trim();
-    const dst = dstI.value.trim();
-    if (!src || !dst) { flash("Fyll i båda fälten (slå upp eller skriv själv)"); return; }
-    const front = dir === "sv2for" ? dst : src; // front = utländskt
-    const back = dir === "sv2for" ? src : dst;   // back = svenska
+    const srcParts = splitTerms(srcI.value);
+    const dstParts = splitTerms(dstI.value);
+    if (!srcParts.length || !dstParts.length) { flash("Fyll i båda fälten (slå upp eller skriv själv)"); return; }
+    if (srcParts.length !== dstParts.length) {
+      flash(`Olika antal ord: ${srcParts.length} mot ${dstParts.length}. Det ska vara lika många på båda sidor (separera med ;).`, 5000);
+      return;
+    }
+    // para ihop term för term → en glosa per par (front = utländskt, back = svenska)
+    const cards = srcParts.map((sp, i) => {
+      const dp = dstParts[i];
+      return dir === "sv2for" ? { front: dp, back: sp } : { front: sp, back: dp };
+    });
     let lessonId = lessonSel.value;
     if (lessonId === "__new__") {
       const name = newLessonI.value.trim();
       if (!name) { flash("Ange namn på den nya lektionen"); return; }
       lessonId = createLessonReturning(currentSubject.id, name);
     }
-    addCards(currentSubject.id, lessonId, [{ front, back }]);
-    flash(`La till "${front}" ✓`, 2000);
+    addCards(currentSubject.id, lessonId, cards);
+    flash(cards.length === 1 ? `La till "${cards[0].front}" ✓` : `La till ${cards.length} ord ✓`, 2000);
     closeModal();
   };
 }
@@ -2582,7 +2593,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v92";
+const APP_VERSION = "v93";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
