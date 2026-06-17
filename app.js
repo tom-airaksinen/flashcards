@@ -606,13 +606,18 @@ function renderLessons() {
     if (canLookUp) $("lookup-add").onclick = () => openTranslate(null, raw);
     return;
   }
+  // Dagens introducerade nya ord räknas redan i "dags" – exkludera dem ur "nya"
+  // så taggarna delar upp helheten (dags = att göra idag, nya = återstående backlog).
+  const introducedToday = new Set(todaysNewCards(currentSubject).map((c) => c.id));
   list.innerHTML = lessonsToShow
     .map((l) => {
       const d = dueCountForLessons([l]);
       const dueTag = d > 0 ? `<span class="due-tag">${d} dags</span>` : "";
+      const nNew = l.cards.reduce((n, c) => n + (isNewCard(c) && !introducedToday.has(c.id) ? 1 : 0), 0);
+      const newTag = nNew > 0 ? `<span class="new-tag">${nNew} nya</span>` : "";
       return `<div class="row" data-lesson="${l.id}">
         <span class="row-title">${esc(l.name)}</span>
-        <span class="row-meta">${dueTag}${l.cards.length} ord</span>
+        <span class="row-meta">${newTag}${dueTag}${l.cards.length} ord</span>
         <button class="row-edit" data-edit="${l.id}" title="Öppna lektionen för att ändra">›</button>
       </div>`;
     })
@@ -2211,7 +2216,7 @@ function openTranslate(defaultLessonId, prefill) {
       dstI.value = out.join("; "); // flera → samma ordning, separerade med ;
     } catch (e) {
       dstI.value = "";
-      flash("Översättning misslyckades: " + e.message, 4000);
+      toast("Översättning misslyckades: " + e.message, 4000); // toast syns ovanför modalen
     }
   }
   m.querySelector("#t-lookup").onclick = lookup;
@@ -2224,9 +2229,9 @@ function openTranslate(defaultLessonId, prefill) {
   m.querySelector("#t-add").onclick = () => {
     const srcParts = splitTerms(srcI.value);
     const dstParts = splitTerms(dstI.value);
-    if (!srcParts.length || !dstParts.length) { flash("Fyll i båda fälten (slå upp eller skriv själv)"); return; }
+    if (!srcParts.length || !dstParts.length) { toast("Fyll i båda fälten (slå upp eller skriv själv)", 3000); return; }
     if (srcParts.length !== dstParts.length) {
-      flash(`Olika antal ord: ${srcParts.length} mot ${dstParts.length}. Det ska vara lika många på båda sidor (separera med ;).`, 5000);
+      toast(`Olika antal ord: ${srcParts.length} mot ${dstParts.length}. Lika många på båda sidor (separera med ;).`, 4500);
       return;
     }
     // para ihop term för term → en glosa per par (front = utländskt, back = svenska)
@@ -2237,7 +2242,7 @@ function openTranslate(defaultLessonId, prefill) {
     let lessonId = lessonSel.value;
     if (lessonId === "__new__") {
       const name = newLessonI.value.trim();
-      if (!name) { flash("Ange namn på den nya lektionen"); return; }
+      if (!name) { toast("Ange namn på den nya lektionen", 3000); return; }
       lessonId = createLessonReturning(currentSubject.id, name);
     }
     addCards(currentSubject.id, lessonId, cards);
@@ -2593,7 +2598,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v93";
+const APP_VERSION = "v94";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

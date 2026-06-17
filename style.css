@@ -155,6 +155,16 @@ body {
   font-weight: 600;
   margin-right: 8px;
 }
+/* "nya"-tagg: dämpad/informativ (blå) – mindre skrikig än gula "dags" som är att-göra */
+.new-tag {
+  background: rgba(91, 140, 255, 0.18);
+  color: #9bb8ff;
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-right: 8px;
+}
 #due-btn { background: var(--easy); color: #0d1426; }
 .empty { color: var(--muted); padding: 24px 16px; text-align: center; }
 .empty + .empty { padding-top: 0; }
