@@ -37,6 +37,7 @@ const USERS = [
   // lock = enkelt lösenordslås vid byte TILL profilen (asså jag fattar att du som snokar här hittar lösenordet enkelt, men det här är lite på skoj, okej?!)
   { id: "tom", name: "Tom", lock: "phl1ppzter" },
   { id: "hedvig", name: "Hedvig", lock: "horselove" },
+  { id: "wille", name: "Wille", lock: "full4br0mmapappor" },
   { id: "guest", name: "Gäst" },
 ];
 const USER_KEY = "flippa-user";
@@ -2598,7 +2599,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v95";
+const APP_VERSION = "v96";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
