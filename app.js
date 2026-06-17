@@ -942,6 +942,65 @@ function commitSessionStats() {
 window.addEventListener("pagehide", commitSessionStats);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") commitSessionStats(); });
 
+// Statistikvy (streak + heatmap) för aktuellt område, filtrerad på vald profil.
+function openStats() {
+  const subjName = currentSubject ? currentSubject.name : null;
+  const recs = getStats().filter((r) => r && r.subject === subjName && (!currentUser || r.user === currentUser));
+  const ymd = (d) => d.toLocaleDateString("sv-SE");
+  const addD = (base, n) => { const d = new Date(base); d.setDate(d.getDate() + n); return d; };
+  const byDate = {};
+  recs.forEach((r) => { if (!r.d) return; (byDate[r.d] || (byDate[r.d] = { cards: 0 })).cards += (r.cards || 0); });
+  const today = new Date(); today.setHours(12, 0, 0, 0);
+  const flag = subjectFlag(currentSubject);
+  const head = `<h3>📊 Statistik</h3><p class="modal-hint" style="margin-top:-4px">${flag ? flag + " " : ""}${esc(subjName || "")}</p>`;
+
+  if (!Object.keys(byDate).length) {
+    const m = openModal(`${head}<p class="empty" style="padding:16px 0">Ingen statistik än – kör ett pass så börjar det fyllas! 🚀</p>
+      <div class="modal-actions"><button class="btn-primary" id="m-ok">Stäng</button></div>`);
+    m.querySelector("#m-ok").onclick = closeModal;
+    return;
+  }
+
+  // nuvarande streak (tillåt att dagens inte är klar än → börja på gårdagen)
+  let cur = 0; { let d = new Date(today); if (!byDate[ymd(d)]) d = addD(d, -1); while (byDate[ymd(d)]) { cur++; d = addD(d, -1); } }
+  // längsta streak (sök 1 år bakåt)
+  let longest = 0, run = 0; { let d = addD(today, -365); for (let i = 0; i <= 365; i++) { if (byDate[ymd(d)]) { run++; if (run > longest) longest = run; } else run = 0; d = addD(d, 1); } }
+  // kort senaste 30 dagarna
+  let c30 = 0; for (let i = 0; i < 30; i++) { const r = byDate[ymd(addD(today, -i))]; if (r) c30 += r.cards; }
+  // dagar övade denna månad
+  const dim = Object.keys(byDate).filter((k) => { const d = new Date(k); return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear(); }).length;
+
+  // heatmap: 18 veckor, måndag överst, senaste veckan längst till höger
+  const end = addD(today, 6 - ((today.getDay() + 6) % 7)); // söndag i innevarande vecka
+  let heat = "";
+  for (let w = 17; w >= 0; w--) {
+    let col = "";
+    for (let dow = 0; dow < 7; dow++) {
+      const d = addD(end, -(w * 7) - (6 - dow));
+      const c = byDate[ymd(d)] ? byDate[ymd(d)].cards : 0;
+      let cls = "st-d";
+      if (d > today) cls += " fut";
+      else if (c) cls += c >= 33 ? " l4" : c >= 22 ? " l3" : c >= 12 ? " l2" : " l1";
+      if (ymd(d) === ymd(today)) cls += " today";
+      col += `<div class="${cls}"></div>`;
+    }
+    heat += `<div class="st-wk">${col}</div>`;
+  }
+
+  const m = openModal(`${head}
+    <div class="st-hero"><div class="st-big">${cur}<span class="st-u"> dagar</span></div><div class="st-cap">🔥 nuvarande streak</div></div>
+    <div class="st-row3">
+      <div class="st-b"><div class="st-v">${longest}</div><div class="st-l">LÄNGSTA STREAK</div></div>
+      <div class="st-b"><div class="st-v">${c30}</div><div class="st-l">KORT / 30 D</div></div>
+      <div class="st-b"><div class="st-v">${dim}</div><div class="st-l">DAGAR I MÅN</div></div>
+    </div>
+    <div class="st-sec">SENASTE 18 VECKORNA</div>
+    <div class="st-heatwrap"><div class="st-heat">${heat}</div></div>
+    <div class="st-legend"><span>mindre</span><span class="st-d"></span><span class="st-d l1"></span><span class="st-d l2"></span><span class="st-d l3"></span><span class="st-d l4"></span><span>mer</span></div>
+    <div class="modal-actions"><button class="btn-primary" id="m-ok">Stäng</button></div>`);
+  m.querySelector("#m-ok").onclick = closeModal;
+}
+
 function beginSession({ queue, dirMode, label, note, kind, lessonId, forced, continueLimit }) {
   commitSessionStats(); // logga ev. tidigare (avbrutet) pass innan nytt startar
   blurActiveInput();
@@ -2001,6 +2060,7 @@ $("add-lesson").onclick = async () => {
   if (name) addLesson(currentSubject.id, name);
 };
 $("edit-subject").onclick = () => { if (currentSubject) editSubject(currentSubject.id); };
+$("stats-subject").onclick = () => { if (currentSubject) openStats(); };
 $("rename-lesson").onclick = async () => {
   const lesson = getCurrentLesson();
   if (!lesson) return;
@@ -2499,7 +2559,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v89";
+const APP_VERSION = "v90";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

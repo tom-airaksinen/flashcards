@@ -203,6 +203,30 @@ body {
   text-align: center;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* Statistikvy (heatmap/streak) i modal */
+.icon-btn svg { display: block; }
+.st-hero { text-align: center; padding: 6px 0 14px; }
+.st-big { font-size: 3.2rem; font-weight: 800; color: var(--fire, #ff8a3d); line-height: 1; }
+.st-big .st-u { font-size: 1rem; color: var(--muted); font-weight: 600; }
+.st-cap { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+.st-row3 { display: flex; gap: 10px; }
+.st-b { flex: 1; text-align: center; background: var(--surface-2); border-radius: 12px; padding: 10px 6px; }
+.st-b .st-v { font-size: 1.15rem; font-weight: 700; }
+.st-b .st-l { color: var(--muted); font-size: 0.6rem; margin-top: 3px; letter-spacing: 0.02em; }
+.st-sec { color: var(--muted); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em; margin: 18px 2px 6px; }
+.st-heatwrap { overflow-x: auto; padding-bottom: 4px; }
+.st-heat { display: flex; gap: 4px; width: max-content; }
+.st-wk { display: flex; flex-direction: column; gap: 4px; }
+.st-d { width: 14px; height: 14px; border-radius: 4px; background: var(--surface-2); }
+.st-d.l1 { background: rgba(91,140,255,0.32); }
+.st-d.l2 { background: rgba(91,140,255,0.55); }
+.st-d.l3 { background: rgba(91,140,255,0.78); }
+.st-d.l4 { background: var(--accent); }
+.st-d.today { box-shadow: 0 0 0 2px var(--easy); }
+.st-d.fut { visibility: hidden; }
+.st-legend { display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin-top: 10px; color: var(--muted); font-size: 0.66rem; }
+.st-legend .st-d { width: 12px; height: 12px; }
 .version-tag { margin-top: auto; text-align: center; color: var(--muted); font-size: 0.7rem; opacity: 0.55; padding: 10px 0 16px; }
 
 /* Riktning + kort per pass – pills med utfällbar väljare (lektionsskärmen) */
