@@ -2086,7 +2086,15 @@ $("add-subject").onclick = async () => {
 $("add-lesson").onclick = async () => {
   if (!currentSubject) return;
   const name = await askName("Ny lektion", "");
-  if (name) addLesson(currentSubject.id, name);
+  if (!name) return;
+  const id = createLessonReturning(currentSubject.id, name);
+  if (!id) return;
+  // Lägg till lokalt direkt så vi kan hoppa in i den nya lektionen utan att vänta
+  // på att Firebase ekar tillbaka (samma nyckel → ingen dubblett när echo kommer).
+  if (!currentSubject.lessons.some((l) => l.id === id)) {
+    currentSubject.lessons.push({ id, name, order: Date.now(), cards: [] });
+  }
+  openEditor(id); // hamna direkt inne i lektionen för att fylla på
 };
 $("edit-subject").onclick = () => { if (currentSubject) editSubject(currentSubject.id); };
 $("stats-subject").onclick = () => { if (currentSubject) openStats(); };
@@ -2599,7 +2607,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v98";
+const APP_VERSION = "v99";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
