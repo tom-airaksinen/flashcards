@@ -688,6 +688,19 @@ body {
   padding: 6px;
 }
 .word-del:active { color: var(--fail); }
+/* Styrke-/lådindikator per ord (svag=röd → stark=blå). b0 = ny (grå). */
+.box-badge {
+  flex: none; min-width: 30px; text-align: center;
+  padding: 3px 7px; border-radius: 8px;
+  font-size: 0.72rem; font-weight: 700;
+  background: rgba(255, 255, 255, 0.08); color: var(--muted);
+}
+.box-badge.b1 { background: #e05a4f; color: #fff; }
+.box-badge.b2 { background: #e0915a; color: #0d1426; }
+.box-badge.b3 { background: #f4c542; color: #0d1426; }
+.box-badge.b4 { background: #8fbf5a; color: #0d1426; }
+.box-badge.b5 { background: #5bbf72; color: #0d1426; }
+.box-badge.b6 { background: #5b8cff; color: #fff; }
 
 /* edit-knapp på lektions-/ämnesrader */
 .row-edit {

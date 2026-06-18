@@ -1978,6 +1978,15 @@ function weakKey(c, dir) {
   const e = getEntry(c, dir);
   return (e.box || 0) * 1e15 + (e.due || 0); // lägst låda (svagast) först
 }
+// Vilken låda (styrka) som visas på ett kort i editorn. Vid "svagast"-sortering
+// speglar den den riktningen; annars den svagaste av de två riktningarna.
+function strengthBox(c) {
+  const fb = getEntry(c, "f2b").box || 0;
+  const bb = getEntry(c, "b2f").box || 0;
+  if (editorSort === "weak-front") return fb;
+  if (editorSort === "weak-back") return bb;
+  return Math.min(fb, bb);
+}
 function sortedCards(lesson) {
   const cs = [...lesson.cards];
   switch (editorSort) {
@@ -2047,15 +2056,18 @@ function renderEditor() {
     return;
   }
   list.innerHTML = cards
-    .map(
-      (c) => `<div class="word-row">
+    .map((c) => {
+      const box = strengthBox(c);
+      const badge = `<span class="box-badge b${box}" title="${box === 0 ? "Aldrig tränat (ny)" : `Låda ${box} av 6 – ju högre desto starkare`}">${box === 0 ? "Ny" : box}</span>`;
+      return `<div class="word-row">
         <div class="word-texts" data-edit="${c.id}">
           <div class="word-front">${esc(c.front)}${c.hint ? ' <span class="word-hint-flag" title="Har minnesregel">💡</span>' : ""}</div>
           <div class="word-back">${esc(c.back)}</div>
         </div>
+        ${badge}
         <button class="word-del" data-del="${c.id}">🗑</button>
-      </div>`
-    )
+      </div>`;
+    })
     .join("");
   list.querySelectorAll(".word-texts").forEach((el) => { el.onclick = () => editWord(el.dataset.edit); });
   list.querySelectorAll(".word-del").forEach((el) => { el.onclick = () => deleteWord(el.dataset.del); });
@@ -2610,7 +2622,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v101";
+const APP_VERSION = "v102";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
