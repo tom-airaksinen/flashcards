@@ -1006,8 +1006,8 @@ function openStats() {
   }
 
   const m = openModal(`${head}
-    <div class="opt-segs st-period" id="st-period">${PERIODS.map((p) => `<button type="button" data-v="${p.v}">${p.label}</button>`).join("")}</div>
     <div class="st-hero"><div class="st-big">${cur}<span class="st-u"> dagar</span></div><div class="st-cap">🔥 nuvarande streak · längsta ${longest}</div></div>
+    <div class="opt-segs st-period" id="st-period">${PERIODS.map((p) => `<button type="button" data-v="${p.v}">${p.label}</button>`).join("")}</div>
     <div class="st-grid" id="st-grid"></div>
     <div class="st-sec">SENASTE 18 VECKORNA</div>
     <div class="st-heatwrap"><div class="st-heat">${heat}</div></div>
@@ -2599,7 +2599,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v97";
+const APP_VERSION = "v98";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
