@@ -2017,16 +2017,19 @@ function renderEditor() {
   const list = $("editor-list");
   if (!lesson.cards.length) {
     const lang = currentForeignLabel();
-    const aiPrompt = `Kan du ge mig 20 bra ord och fraser som handlar om "${lesson.name}" på ${lang}? Formatet ska vara ord/fras på ${lang};svensk översättning, en per rad`;
-    list.innerHTML = `<p class="empty">Inga ord än. Tryck ＋ Lägg till ord.</p>
-      <div class="ai-tip">
+    const aiPrompt = `Kan du ge mig 30 bra ord och fraser som handlar om "${lesson.name}" på ${lang}? Formatet ska vara ord/fras på ${lang};svensk översättning, en per rad`;
+    // Renare tomt läge: AI-prompten är dold tills man trycker "ta hjälp av en AI".
+    list.innerHTML = `
+      <p class="empty">Inga ord än. Lägg till eller slå upp här ovanför, eller <button type="button" class="link-action" id="ai-help">ta hjälp av en AI</button>.</p>
+      <div class="ai-tip hidden" id="ai-tip">
         <div class="ai-tip-head">
-          <span>💬 Tips: be en AI om ord</span>
+          <span>💬 Be en AI om ord</span>
           <button class="ai-copy" id="ai-copy" type="button" title="Kopiera prompten">${COPY_ICON_SVG}</button>
         </div>
         <p class="ai-tip-prompt">${esc(aiPrompt)}</p>
-        <p class="ai-tip-foot">Klistra in svaret via ＋ Lägg till ord.</p>
+        <p class="ai-tip-foot">Ge denna prompt till ChatGPT/Claude, kopiera sedan svaret och klistra in via ＋ Lägg till.</p>
       </div>`;
+    $("ai-help").onclick = () => $("ai-tip").classList.toggle("hidden");
     $("ai-copy").onclick = () => copyText(aiPrompt, $("ai-copy"));
     return;
   }
@@ -2607,7 +2610,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v100";
+const APP_VERSION = "v101";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
