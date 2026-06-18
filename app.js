@@ -2038,7 +2038,9 @@ function renderEditor() {
         </button>
       </div>`;
     $("ai-help").onclick = () => $("ai-tip").classList.toggle("hidden");
-    $("ai-copy").onclick = () => copyText(aiPrompt, $("ai-cp-icon"));
+    // Kopiera redan vid nedtryck (inte vid release) så ingen tror att man måste
+    // long-pressa för att markera/kopiera manuellt. preventDefault stoppar markering/iOS-callout.
+    $("ai-copy").addEventListener("pointerdown", (e) => { e.preventDefault(); copyText(aiPrompt, $("ai-cp-icon")); });
     return;
   }
   const sorted = sortedCards(lesson);
@@ -2626,7 +2628,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v104";
+const APP_VERSION = "v105";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
