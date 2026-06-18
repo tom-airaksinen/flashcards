@@ -1859,10 +1859,10 @@ function toast(msg, ms = 1700) {
 }
 
 // Kopiera text till urklipp (med fallback för äldre webbläsare). Visar kvittens.
-function copyText(text, btn) {
+function copyText(text, iconEl) {
   const done = () => {
     toast("Kopierat till urklipp ✓");
-    if (btn) { btn.innerHTML = CHECK_ICON_SVG; setTimeout(() => { btn.innerHTML = COPY_ICON_SVG; }, 1300); }
+    if (iconEl) { iconEl.innerHTML = CHECK_ICON_SVG; setTimeout(() => { iconEl.innerHTML = COPY_ICON_SVG; }, 1300); }
   };
   const fail = () => flash("Kunde inte kopiera – markera och kopiera manuellt", 3000);
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -2031,15 +2031,14 @@ function renderEditor() {
     list.innerHTML = `
       <p class="empty">Inga ord än. Lägg till eller slå upp här ovanför, eller <button type="button" class="link-action" id="ai-help">ta hjälp av en AI</button>.</p>
       <div class="ai-tip hidden" id="ai-tip">
-        <div class="ai-tip-head">
-          <span>💬 Be en AI om ord</span>
-          <button class="ai-copy" id="ai-copy" type="button" title="Kopiera prompten">${COPY_ICON_SVG}</button>
-        </div>
-        <p class="ai-tip-prompt">${esc(aiPrompt)}</p>
-        <p class="ai-tip-foot">Ge denna prompt till ChatGPT/Claude, kopiera sedan svaret och klistra in via ＋ Lägg till.</p>
+        <p class="ai-tip-lead">Ge denna prompt till ChatGPT/Claude, kopiera sedan svaret och klistra in via ＋ Lägg till.</p>
+        <button class="ai-prompt-copy" id="ai-copy" type="button" title="Tryck för att kopiera prompten">
+          <span class="ai-cp-icon" id="ai-cp-icon">${COPY_ICON_SVG}</span>
+          <span class="ai-cp-text">${esc(aiPrompt)}</span>
+        </button>
       </div>`;
     $("ai-help").onclick = () => $("ai-tip").classList.toggle("hidden");
-    $("ai-copy").onclick = () => copyText(aiPrompt, $("ai-copy"));
+    $("ai-copy").onclick = () => copyText(aiPrompt, $("ai-cp-icon"));
     return;
   }
   const sorted = sortedCards(lesson);
@@ -2622,7 +2621,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v102";
+const APP_VERSION = "v103";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

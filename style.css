@@ -186,22 +186,17 @@ body {
 }
 .ai-tip:not(.hidden) { animation: ai-reveal 0.2s ease-out; }
 @keyframes ai-reveal { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-.ai-tip-head {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  color: var(--muted); font-size: 0.82rem; font-weight: 600; margin-bottom: 10px;
+.ai-tip-lead { color: var(--muted); font-size: 0.78rem; line-height: 1.45; margin-bottom: 10px; }
+/* Hela prompt-rutan är tryckbar för att kopiera; ikonen (utan ram) uppe till höger */
+.ai-prompt-copy {
+  position: relative; display: block; width: 100%; text-align: left;
+  background: var(--surface-2); border: none; border-radius: 10px;
+  padding: 12px 46px 12px 13px; color: var(--text); font-family: inherit; cursor: pointer;
 }
-.ai-copy {
-  background: var(--surface-2); border: none; color: var(--text);
-  width: 40px; height: 36px; border-radius: 9px; cursor: pointer; flex: none;
-  display: flex; align-items: center; justify-content: center;
-}
-.ai-copy:active { background: var(--accent); color: #fff; }
-.ai-tip-prompt {
-  background: var(--surface-2); border-radius: 10px; padding: 11px 12px;
-  color: var(--text); font-size: 0.9rem; line-height: 1.45;
-  white-space: pre-wrap; -webkit-user-select: text; user-select: text;
-}
-.ai-tip-foot { color: var(--muted); font-size: 0.76rem; margin-top: 8px; }
+.ai-prompt-copy:active { background: rgba(91, 140, 255, 0.18); }
+.ai-cp-text { display: block; font-size: 0.9rem; line-height: 1.45; -webkit-user-select: text; user-select: text; }
+.ai-cp-icon { position: absolute; top: 10px; right: 10px; color: var(--muted); display: flex; }
+.ai-cp-icon svg { display: block; }
 
 /* Flytande bekräftelse (toast) */
 .toast {
