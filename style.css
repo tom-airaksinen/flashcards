@@ -211,7 +211,7 @@ body {
 .ai-tip:not(.hidden) { animation: ai-reveal 0.2s ease-out; }
 @keyframes ai-reveal { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 .ai-tip-lead { color: var(--muted); font-size: 0.78rem; line-height: 1.45; margin-bottom: 10px; }
-.ai-app-link { color: var(--accent); font-weight: 600; text-decoration: none; }
+.ai-app-link { background: none; border: none; padding: 0; font: inherit; cursor: pointer; color: var(--accent); font-weight: 600; }
 /* Hela prompt-rutan är tryckbar för att kopiera; ikonen (utan ram) uppe till höger */
 .ai-prompt-copy {
   position: relative; display: block; width: 100%; text-align: left;

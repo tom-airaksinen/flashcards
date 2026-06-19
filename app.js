@@ -1980,6 +1980,21 @@ function copyText(text, iconEl) {
   } catch (_) { fail(); }
 }
 
+// Öppna en AI-app. I en hemskärmsinstallerad PWA öppnar iOS vanliga https-länkar
+// i en intern webbvy (där man inte är inloggad). Vi försöker därför öppna native-
+// appen via dess URL-schema och faller tillbaka på webben i Safari om appen inte
+// finns. Om appen öppnas göms sidan (visibilitychange) → då hoppar vi över fallbacken.
+function openAiApp(scheme, web) {
+  let switched = false;
+  const onHide = () => { if (document.visibilityState === "hidden") switched = true; };
+  document.addEventListener("visibilitychange", onHide);
+  try { window.location.href = scheme; } catch (_) {}
+  setTimeout(() => {
+    document.removeEventListener("visibilitychange", onHide);
+    if (!switched && document.visibilityState === "visible") window.open(web, "_blank");
+  }, 1400);
+}
+
 // =========================================================================
 //  Firebase-skrivningar (CRUD)
 // =========================================================================
@@ -2132,13 +2147,16 @@ function renderEditor() {
     list.innerHTML = `
       <p class="empty">Inga ord än. Lägg till eller slå upp här ovanför, eller <button type="button" class="link-action" id="ai-help">ta hjälp av en AI</button>.</p>
       <div class="ai-tip hidden" id="ai-tip">
-        <p class="ai-tip-lead">Ge denna prompt till <a class="ai-app-link" href="https://chatgpt.com" target="_blank" rel="noopener">ChatGPT</a>/<a class="ai-app-link" href="https://claude.ai" target="_blank" rel="noopener">Claude</a>, kopiera sedan svaret och klistra in via ＋ Lägg till.</p>
+        <p class="ai-tip-lead">Ge denna prompt till <button type="button" class="ai-app-link" id="ai-open-gpt">ChatGPT</button>/<button type="button" class="ai-app-link" id="ai-open-claude">Claude</button>, kopiera sedan svaret och klistra in via ＋ Lägg till.</p>
         <div class="ai-prompt-copy" id="ai-copy" role="button" tabindex="0" title="Tryck för att kopiera (eller markera manuellt)">
           <span class="ai-cp-icon" id="ai-cp-icon">${COPY_ICON_SVG}</span>
           <span class="ai-cp-text">${esc(aiPrompt)}</span>
         </div>
       </div>`;
     $("ai-help").onclick = () => $("ai-tip").classList.toggle("hidden");
+    // Öppna native-appen (schema) med fallback till webben i Safari
+    $("ai-open-gpt").onclick = () => openAiApp("chatgpt://", "https://chatgpt.com");
+    $("ai-open-claude").onclick = () => openAiApp("claude://", "https://claude.ai");
     // iOS tillåter clipboard-skrivning bara från ett riktigt tryck (click), inte
     // pointerdown → kopiera vid klick. Texten är även markerbar som manuell reserv.
     $("ai-copy").onclick = () => copyText(aiPrompt, $("ai-cp-icon"));
@@ -2733,7 +2751,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v111";
+const APP_VERSION = "v112";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
