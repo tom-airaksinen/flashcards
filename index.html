@@ -16,6 +16,8 @@
   <!-- Status / laddning -->
   <div id="status-banner" class="hidden"></div>
 
+  <!-- Flikinnehåll: Flippa-fliken (#screens) + Statistik-fliken (#stats-screen) -->
+  <div id="app-main">
   <!-- Scen där skärmarna glider in/ut (push/pop) -->
   <div id="screens">
 
@@ -36,7 +38,6 @@
     <header class="app-header">
       <button class="back-btn" data-back="subjects">←</button>
       <h1 id="lessons-title"></h1>
-      <button id="stats-subject" class="icon-btn" title="Statistik"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="20" x2="6" y2="12"/><line x1="12" y1="20" x2="12" y2="5"/><line x1="18" y1="20" x2="18" y2="9"/></svg></button>
       <button id="edit-subject" class="icon-btn" title="Redigera ämne">✎</button>
       <button id="add-lesson" class="icon-btn" title="Ny lektion">＋</button>
     </header>
@@ -186,6 +187,22 @@
   </section>
 
   </div><!-- /#screens -->
+
+  <!-- Statistik-fliken (fylls av renderStats) -->
+  <section id="stats-screen" class="tab-view hidden"></section>
+  </div><!-- /#app-main -->
+
+  <!-- Bottenflikar -->
+  <nav id="tabbar">
+    <button class="tab-btn on" data-tab="flippa" type="button">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="14" height="14" rx="2.5"/><path d="M7 7V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2"/></svg>
+      <span>Flippa</span>
+    </button>
+    <button class="tab-btn" data-tab="stats" type="button">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="20" x2="6" y2="12"/><line x1="12" y1="20" x2="12" y2="5"/><line x1="18" y1="20" x2="18" y2="9"/></svg>
+      <span>Statistik</span>
+    </button>
+  </nav>
 
   <!-- Modal -->
   <div id="modal-root" class="hidden"></div>

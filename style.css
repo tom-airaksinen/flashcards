@@ -64,7 +64,28 @@ body {
 /* ---- Skärmar ---- */
 /* Scen för push/pop-navigeringen. Ligger innanför body:s safe-area-padding, så
    skärmarna respekterar notch/hörn även när de positioneras absolut under glid. */
+/* Flikinnehåll: en flik visas, den andra döljs (.hidden) */
+#app-main { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 #screens { position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.tab-view { flex: 1; min-height: 0; overflow-y: auto; }
+
+/* Statistik-fliken */
+#stats-screen { padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); }
+.stats-header { display: flex; align-items: center; gap: 8px; padding: 8px 0 4px; }
+.stats-header h1 { font-size: 1.4rem; margin: 0; }
+.stats-scope { margin: 4px 0 6px; }
+.stats-scope .cs { width: 100%; }
+
+/* Bottenflikar */
+#tabbar { flex: none; display: flex; background: var(--surface); border-top: 1px solid #243352; padding-bottom: env(safe-area-inset-bottom); }
+.tab-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: none; border: none; color: var(--muted);
+  padding: 8px 4px 7px; font-size: 0.66rem; font-weight: 600; font-family: inherit; cursor: pointer;
+  letter-spacing: 0.02em;
+}
+.tab-btn svg { display: block; }
+.tab-btn.on { color: var(--accent); }
 .screen { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 /* Under en övergång ligger båda skärmarna absolut ovanpå varandra och glider.
    background krävs: utan den lyser den gamla skärmen igenom den nya ("skräp"). */

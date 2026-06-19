@@ -452,6 +452,7 @@ function show(screenName) {
   if (screenName === from || !fromEl || prefersReducedMotion || fromEl.classList.contains("hidden")) {
     setOnlyScreen(screenName);
     shownScreen = screenName;
+    updateTabbar();
     return;
   }
   const dir = (SCREEN_DEPTH[screenName] ?? 0) >= (SCREEN_DEPTH[from] ?? 0) ? 1 : -1;
@@ -474,6 +475,7 @@ function show(screenName) {
   outEl.style.transform = `translateX(${dir > 0 ? -22 : 22}%)`;
   outEl.style.opacity = "0";
   shownScreen = screenName;
+  updateTabbar();
 
   const cleanup = () => {
     navCleanup = null;
@@ -488,6 +490,29 @@ function show(screenName) {
 }
 
 let activeScreen = "subjects";
+
+// ---- Bottenflikar (Flippa / Statistik) ----
+let activeTab = "flippa";
+let statsScope = null; // ämnes-id eller "all"
+
+function setTab(tab) {
+  activeTab = tab;
+  $("screens").classList.toggle("hidden", tab !== "flippa");
+  $("stats-screen").classList.toggle("hidden", tab !== "stats");
+  if (tab === "stats") {
+    // Default: ämnet man har aktivt i Flippa-fliken, annars Alla ämnen
+    statsScope = currentSubject ? currentSubject.id : "all";
+    renderStats();
+  }
+  updateTabbar();
+}
+
+function updateTabbar() {
+  document.querySelectorAll("#tabbar .tab-btn").forEach((b) => b.classList.toggle("on", b.dataset.tab === activeTab));
+  // Dölj flikfältet under pågående pass / klar-skärm i Flippa-fliken
+  const hide = activeTab === "flippa" && (shownScreen === "training" || shownScreen === "congrats");
+  $("tabbar").classList.toggle("hidden", hide);
+}
 
 function renderCurrentScreen() {
   if (activeScreen === "subjects") renderSubjects();
@@ -511,7 +536,7 @@ function renderSubjects() {
   // Bara den valda användarens områden
   const mine = content.filter((s) => s.owner === currentUser);
   if (!mine.length) {
-    list.innerHTML = `<p class="empty">Inga områden för ${esc(userName(currentUser))} än. Tryck ＋ för att skapa ett.</p>`;
+    list.innerHTML = `<p class="empty">Inga ämnen för ${esc(userName(currentUser))} än. Tryck ＋ för att skapa ett.</p>`;
     return;
   }
   list.innerHTML = mine
@@ -949,22 +974,41 @@ function commitSessionStats() {
 window.addEventListener("pagehide", commitSessionStats);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") commitSessionStats(); });
 
-// Statistikvy (streak + heatmap) för aktuellt område, filtrerad på vald profil.
-function openStats() {
-  const subjName = currentSubject ? currentSubject.name : null;
-  const recs = getStats().filter((r) => r && r.subject === subjName && (!currentUser || r.user === currentUser));
+// Statistik-fliken (streak + heatmap + Leitner). Scope = ett ämne eller "Alla ämnen".
+const STATS_BARS_ICON = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="20" x2="6" y2="12"/><line x1="12" y1="20" x2="12" y2="5"/><line x1="18" y1="20" x2="18" y2="9"/></svg>`;
+
+function renderStats() {
+  const host = $("stats-screen");
+  const mine = content.filter((s) => s.owner === currentUser);
+  // Validera/sätt scope: default aktivt ämne, fall tillbaka på Alla ämnen
+  if (statsScope == null) statsScope = currentSubject ? currentSubject.id : "all";
+  if (statsScope !== "all" && !mine.some((s) => s.id === statsScope)) statsScope = "all";
+  const scopeSubject = statsScope === "all" ? null : mine.find((s) => s.id === statsScope);
+  const subjName = scopeSubject ? scopeSubject.name : null;
+
+  // Skal: rubrik + ämnesväljare + kropp (alltid synliga, även utan data)
+  host.innerHTML = `
+    <header class="stats-header">${STATS_BARS_ICON}<h1>Statistik</h1></header>
+    <div class="stats-scope" id="st-scope"></div>
+    <div id="st-body"></div>`;
+
+  const items = [{ value: "all", label: "Alla ämnen" }].concat(
+    mine.map((s) => { const f = subjectFlag(s); return { value: s.id, label: (f ? f + " " : "") + s.name }; }));
+  const sel = buildSelect(items, statsScope, (v) => { statsScope = v; renderStats(); });
+  $("st-scope").appendChild(sel.el);
+  // Klick utanför väljaren stänger den (buildSelect:s egen logik letar efter .modal)
+  host.onclick = (e) => { if (!e.target.closest(".cs")) host.querySelectorAll(".cs-list").forEach((o) => o.classList.add("hidden")); };
+
+  const body = $("st-body");
+  const recs = getStats().filter((r) => r && (!currentUser || r.user === currentUser) && (statsScope === "all" || r.subject === subjName));
   const ymd = (d) => d.toLocaleDateString("sv-SE");
   const addD = (base, n) => { const d = new Date(base); d.setDate(d.getDate() + n); return d; };
   const byDate = {};
   recs.forEach((r) => { if (!r.d) return; (byDate[r.d] || (byDate[r.d] = { cards: 0 })).cards += (r.cards || 0); });
   const today = new Date(); today.setHours(12, 0, 0, 0);
-  const flag = subjectFlag(currentSubject);
-  const head = `<h3>📊 Statistik</h3><p class="modal-hint" style="margin-top:-4px">${flag ? flag + " " : ""}${esc(subjName || "")}</p>`;
 
   if (!Object.keys(byDate).length) {
-    const m = openModal(`${head}<p class="empty" style="padding:16px 0">Ingen statistik än – kör ett pass så börjar det fyllas! 🚀</p>
-      <div class="modal-actions"><button class="btn-primary" id="m-ok">Stäng</button></div>`);
-    m.querySelector("#m-ok").onclick = closeModal;
+    body.innerHTML = `<p class="empty" style="padding:24px 0">Ingen statistik än – kör ett pass så börjar det fyllas! 🚀</p>`;
     return;
   }
 
@@ -998,7 +1042,8 @@ function openStats() {
     return dirMode === "f2b" ? fb : dirMode === "b2f" ? bb : Math.min(fb, bb);
   };
   const ltCounts = [0, 0, 0, 0, 0, 0, 0];
-  currentSubject.lessons.forEach((l) => l.cards.forEach((c) => { ltCounts[boxOf(c)]++; }));
+  const ltSubjects = statsScope === "all" ? mine : (scopeSubject ? [scopeSubject] : []);
+  ltSubjects.forEach((s) => s.lessons.forEach((l) => l.cards.forEach((c) => { ltCounts[boxOf(c)]++; })));
   const ltMax = Math.max(1, ...ltCounts);
   const LT_LABELS = ["Ny", "1d", "2d", "4d", "8d", "16d", "32d"];
   const leitner = ltCounts.map((n, i) =>
@@ -1020,7 +1065,7 @@ function openStats() {
     return { pass, kort, min, dagar };
   }
 
-  const m = openModal(`${head}
+  body.innerHTML = `
     <div class="st-hero"><div class="st-big">${cur}<span class="st-u"> dagar</span></div><div class="st-cap">🔥 nuvarande streak · längsta ${longest}</div></div>
     <div class="opt-segs st-period" id="st-period">${PERIODS.map((p) => `<button type="button" data-v="${p.v}">${p.label}</button>`).join("")}</div>
     <div class="st-grid" id="st-grid"></div>
@@ -1028,12 +1073,10 @@ function openStats() {
     <div class="st-heatwrap"><div class="st-heat">${heat}</div></div>
     <div class="st-legend"><span>mindre</span><span class="st-d"></span><span class="st-d l1"></span><span class="st-d l2"></span><span class="st-d l3"></span><span class="st-d l4"></span><span>mer</span></div>
     <div class="st-sec">LEITNER</div>
-    <div class="st-leitner">${leitner}</div>
-    <div class="modal-actions"><button class="btn-primary" id="m-ok">Stäng</button></div>`);
-  m.querySelector("#m-ok").onclick = closeModal;
+    <div class="st-leitner">${leitner}</div>`;
 
-  const segs = m.querySelector("#st-period");
-  const grid = m.querySelector("#st-grid");
+  const segs = body.querySelector("#st-period");
+  const grid = body.querySelector("#st-grid");
   const renderKpis = () => {
     segs.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === period));
     const k = periodKpis(period);
@@ -2176,7 +2219,7 @@ $("add-lesson").onclick = async () => {
   openEditor(id); // hamna direkt inne i lektionen för att fylla på
 };
 $("edit-subject").onclick = () => { if (currentSubject) editSubject(currentSubject.id); };
-$("stats-subject").onclick = () => { if (currentSubject) openStats(); };
+document.querySelectorAll("#tabbar .tab-btn").forEach((b) => b.addEventListener("click", () => setTab(b.dataset.tab)));
 $("rename-lesson").onclick = async () => {
   const lesson = getCurrentLesson();
   if (!lesson) return;
@@ -2690,7 +2733,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v110";
+const APP_VERSION = "v111";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
