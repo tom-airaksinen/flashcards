@@ -1861,10 +1861,11 @@ function askWords() {
   });
 }
 
-function askWord(front, back, hint) {
+function askWord(front, back, hint, allowDelete) {
   return new Promise((resolve) => {
+    const delBtn = allowDelete ? `<button class="modal-del" id="m-del" title="Ta bort ord" aria-label="Ta bort ord">🗑</button>` : "";
     const m = openModal(`
-      <h3>Redigera ord</h3>
+      <div class="modal-head"><h3>Redigera ord</h3>${delBtn}</div>
       <label>Utländskt (framsida)</label>
       <input type="text" id="m-front" value="${esc(front)}" autocomplete="off" autocapitalize="none" autocorrect="off" />
       <label>Svenska (baksida)</label>
@@ -1877,6 +1878,7 @@ function askWord(front, back, hint) {
       </div>`);
     m.querySelector("#m-front").focus();
     m.querySelector("#m-cancel").onclick = () => { closeModal(); resolve(null); };
+    if (allowDelete) m.querySelector("#m-del").onclick = () => { closeModal(); resolve({ _delete: true }); };
     m.querySelector("#m-ok").onclick = () => {
       const f = m.querySelector("#m-front").value.trim();
       const b = m.querySelector("#m-back").value.trim();
@@ -2194,12 +2196,10 @@ function renderEditor() {
           <div class="word-back">${esc(c.back)}</div>
         </div>
         ${badge}
-        <button class="word-del" data-del="${c.id}">🗑</button>
       </div>`;
     })
     .join("");
   list.querySelectorAll(".word-texts").forEach((el) => { el.onclick = () => editWord(el.dataset.edit); });
-  list.querySelectorAll(".word-del").forEach((el) => { el.onclick = () => deleteWord(el.dataset.del); });
 }
 
 async function editWord(cid) {
@@ -2207,8 +2207,10 @@ async function editWord(cid) {
   if (!lesson) return;
   const c = lesson.cards.find((x) => x.id === cid);
   if (!c) return;
-  const res = await askWord(c.front, c.back, c.hint);
-  if (res) { c.hint = res.hint || null; updateCard(currentSubject.id, lesson.id, cid, res.front, res.back, res.hint); }
+  const res = await askWord(c.front, c.back, c.hint, true);
+  if (!res) return;
+  if (res._delete) { deleteWord(cid); return; }
+  c.hint = res.hint || null; updateCard(currentSubject.id, lesson.id, cid, res.front, res.back, res.hint);
 }
 
 async function deleteWord(cid) {
@@ -2755,7 +2757,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v117";
+const APP_VERSION = "v118";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

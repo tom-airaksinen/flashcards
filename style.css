@@ -818,6 +818,14 @@ body {
 }
 @keyframes slideup { from { transform: translateY(-30px); opacity: 0; } to { transform: none; opacity: 1; } }
 .modal h3 { font-size: 1.1rem; }
+/* Rubrikrad med ev. papperskorg uppe till höger (t.ex. "Redigera ord") */
+.modal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.modal-head h3 { margin: 0; }
+.modal-del {
+  flex: none; background: none; border: none; color: var(--muted);
+  font-size: 1.15rem; cursor: pointer; padding: 4px 6px; border-radius: 8px; line-height: 1;
+}
+.modal-del:active { color: var(--fail); }
 .modal label { font-size: 0.82rem; color: var(--muted); margin-bottom: -6px; }
 .modal input, .modal textarea {
   background: var(--surface-2);
