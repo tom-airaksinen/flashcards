@@ -1446,7 +1446,8 @@ const speakBtn = $("speak-btn");
 
 // Autoläge: läs upp automatiskt varje gång den utländska sidan visas
 const AUTO_SPEAK_KEY = "flippa-autospeak";
-let autoSpeak = localStorage.getItem(AUTO_SPEAK_KEY) === "1";
+// Default PÅ på ny enhet (saknad nyckel). Ett uttryckligt val att stänga av ("0") respekteras.
+let autoSpeak = localStorage.getItem(AUTO_SPEAK_KEY) !== "0";
 function saveAutoSpeak() { localStorage.setItem(AUTO_SPEAK_KEY, autoSpeak ? "1" : "0"); }
 
 function speak(text, lang, onEnd) {
@@ -2819,7 +2820,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v120";
+const APP_VERSION = "v121";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
