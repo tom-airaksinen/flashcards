@@ -70,7 +70,12 @@ body {
 .tab-view { flex: 1; min-height: 0; overflow-y: auto; }
 
 /* Statistik-fliken */
-#stats-screen { padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); }
+#stats-screen {
+  padding: 8px 16px calc(40px + env(safe-area-inset-bottom));
+  /* Samma mjuka uttoning i nederkanten som listorna har */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 52px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 52px), transparent);
+}
 .stats-header { display: flex; align-items: center; gap: 8px; padding: 8px 0 4px; }
 .stats-header h1 { font-size: 1.4rem; margin: 0; }
 .stats-scope { margin: 4px 0 6px; }
@@ -80,7 +85,7 @@ body {
 #tabbar {
   flex: none; display: flex; justify-content: center; gap: 14px;
   background: var(--bg); border-top: 1px solid #1c2742;
-  padding-bottom: max(2px, calc(env(safe-area-inset-bottom) - 22px));
+  padding-bottom: max(2px, calc(env(safe-area-inset-bottom) - 30px));
 }
 .tab-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
