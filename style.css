@@ -742,7 +742,6 @@ body {
   padding: 12px 14px;
   transform: translateX(0);
   touch-action: pan-y;
-  will-change: transform;
   cursor: pointer;
 }
 .word-row-del {
@@ -752,12 +751,14 @@ body {
   border: none;
   background: var(--fail);
   color: #fff;
-  font-size: 1.2rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  visibility: hidden; /* visas bara vid svep/öppen – annars flimmer vid scroll */
 }
+.word-row.revealing .word-row-del,
+.word-row.open .word-row-del { visibility: visible; }
 .word-texts { flex: 1; min-width: 0; }
 .word-front { font-weight: 600; }
 .word-back { color: var(--muted); font-size: 0.9rem; margin-top: 2px; }
@@ -937,4 +938,4 @@ body {
   cursor: pointer;
 }
 .modal input[type="file"] { color: var(--muted); font-size: 0.85rem; }
-.full-btn.danger { background: transparent; color: var(--fail); }
+.full-btn.danger { background: transparent; color: var(--fail); display: flex; align-items: center; justify-content: center; gap: 8px; }

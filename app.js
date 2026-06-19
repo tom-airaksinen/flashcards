@@ -1775,7 +1775,7 @@ function askSubject(title, name = "", lang = "", allowDelete = false) {
   // Ägaren väljs INTE här – den ges av aktiv profil (nytt) resp. behålls (redigering),
   // så man inte kan skapa eller flytta ett område åt en annan användare.
   return new Promise((resolve) => {
-    const delBtn = allowDelete ? `<button class="full-btn danger" id="m-del">🗑 Ta bort ämne</button>` : "";
+    const delBtn = allowDelete ? `<button class="full-btn danger" id="m-del">${TRASH_ICON_SVG} Ta bort ämne</button>` : "";
     const m = openModal(`
       <h3>${esc(title)}</h3>
       <label>Språk (för uttal)</label>
@@ -1863,7 +1863,7 @@ function askWords() {
 
 function askWord(front, back, hint, allowDelete) {
   return new Promise((resolve) => {
-    const delBtn = allowDelete ? `<button class="modal-del" id="m-del" title="Ta bort ord" aria-label="Ta bort ord">🗑</button>` : "";
+    const delBtn = allowDelete ? `<button class="modal-del" id="m-del" title="Ta bort ord" aria-label="Ta bort ord">${TRASH_ICON_SVG}</button>` : "";
     const m = openModal(`
       <div class="modal-head"><h3>Redigera ord</h3>${delBtn}</div>
       <label>Utländskt (framsida)</label>
@@ -1953,6 +1953,8 @@ function flash(msg, ms = 3000) {
 
 // Stiliserade ikoner (två omlott-rutor = kopiera; bock = klar)
 const COPY_ICON_SVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>`;
+// Stiliserad papperskorg (currentColor → vit mot rött, muted/röd i modaler) – används överallt
+const TRASH_ICON_SVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5v2"/><path d="M6.5 7l.8 12a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9l.8-12"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>`;
 const CHECK_ICON_SVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>`;
 
 // Tydlig, flytande bekräftelse längst ner
@@ -2191,7 +2193,7 @@ function renderEditor() {
         badge = `<span class="box-badge b${box}" title="${box === 0 ? "Aldrig tränat (ny)" : `Låda ${box} av 6 – ju högre desto starkare`}">${box === 0 ? "Ny" : box}</span>`;
       }
       return `<div class="word-row" data-id="${c.id}">
-        <button class="word-row-del" data-del="${c.id}" aria-label="Ta bort ord" title="Ta bort ord">🗑</button>
+        <button class="word-row-del" data-del="${c.id}" aria-label="Ta bort ord" title="Ta bort ord">${TRASH_ICON_SVG}</button>
         <div class="word-row-main">
           <div class="word-texts">
             <div class="word-front">${esc(c.front)}${c.hint ? ' <span class="word-hint-flag" title="Har minnesregel">💡</span>' : ""}</div>
@@ -2214,14 +2216,18 @@ function attachSwipeDelete(row, cid) {
   let startX = 0, startY = 0, dx = 0, dragging = false, decided = false, horizontal = false;
   const isOpen = () => row.classList.contains("open");
   const setX = (x) => { main.style.transform = `translateX(${x}px)`; };
+  // Papperskorgen är dold tills man faktiskt sveper/öppnar – annars flimrar den
+  // röda ytan i radernas hörn när man scrollar listan vertikalt.
+  const hideDelLater = (r) => setTimeout(() => { if (!r.classList.contains("open")) r.classList.remove("revealing"); }, 230);
   const closeOthers = () => row.parentElement.querySelectorAll(".word-row.open").forEach((r) => {
-    if (r !== row) { r.classList.remove("open"); const m = r.querySelector(".word-row-main"); m.style.transition = "transform 0.2s"; m.style.transform = "translateX(0)"; }
+    if (r !== row) { r.classList.remove("open"); const m = r.querySelector(".word-row-main"); m.style.transition = "transform 0.2s"; m.style.transform = "translateX(0)"; hideDelLater(r); }
   });
   const snap = (open) => {
     main.style.transition = "transform 0.2s";
     row.classList.toggle("open", open);
     setX(open ? OPEN : 0);
-    if (open) closeOthers();
+    if (open) { row.classList.add("revealing"); closeOthers(); }
+    else hideDelLater(row);
   };
   main.addEventListener("pointerdown", (e) => {
     if (e.button != null && e.button > 0) return;
@@ -2235,7 +2241,7 @@ function attachSwipeDelete(row, cid) {
     if (!decided) {
       if (Math.abs(mx) < MOVE_SLOP && Math.abs(my) < MOVE_SLOP) return;
       decided = true; horizontal = Math.abs(mx) > Math.abs(my);
-      if (horizontal) { try { main.setPointerCapture(e.pointerId); } catch (_) {} }
+      if (horizontal) { row.classList.add("revealing"); try { main.setPointerCapture(e.pointerId); } catch (_) {} }
     }
     if (!horizontal) { dragging = false; return; } // vertikal → låt listan scrolla
     e.preventDefault();
@@ -2813,7 +2819,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v119";
+const APP_VERSION = "v120";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
