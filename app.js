@@ -189,6 +189,7 @@ function isDueNow(card, dirMode, now) {
 
 // grade: "fail" | "good" | "easy" | "hard"
 function gradeCard(card, dir, grade) {
+  const wasNew = isNewCard(card); // mät INNAN mutation: nytt kort = båda lådor i 0
   const e = getEntry(card, dir);
   const now = Date.now();
   if (grade === "fail" || grade === "hard") {
@@ -202,11 +203,27 @@ function gradeCard(card, dir, grade) {
   }
   e.lastSeen = now;
   saveSRS();
+  if (wasNew) markFirstStudied(card); // stämpla första studietillfället (en gång per kort)
 }
 
 // Ett kort är "nytt" (aldrig tränat) när BÅDA riktningarna ligger i låda 0.
 function isNewCard(c) {
   return getEntry(c, "f2b").box === 0 && getEntry(c, "b2f").box === 0;
+}
+
+// "Första gången studerat"-datum per kort: sätts EN gång, när ett nytt kort (låda 0)
+// graderas första gången. Riktningsoberoende nyckel → räknas en gång per kort. Driver
+// statistiken "nya ord" per period. Kort som redan var inlärda när spårningen infördes
+// stämplas aldrig (de var inte nya då) och räknas därför inte som nya.
+const FIRST_STUDIED_KEY = "flippa-firststudied-v1";
+function loadFirstStudied() {
+  try { return JSON.parse(localStorage.getItem(FIRST_STUDIED_KEY) || "{}") || {}; } catch { return {}; }
+}
+function cardKeyOf(c) { return `${normPart(c.front)}|${normPart(c.back)}`; }
+function markFirstStudied(card) {
+  const k = cardKeyOf(card);
+  const m = loadFirstStudied();
+  if (!m[k]) { m[k] = todayStr(); localStorage.setItem(FIRST_STUDIED_KEY, JSON.stringify(m)); }
 }
 
 // =========================================================================
@@ -1048,6 +1065,15 @@ function renderStats() {
   const ltCounts = [0, 0, 0, 0, 0, 0, 0];
   const ltSubjects = statsScope === "all" ? mine : (scopeSubject ? [scopeSubject] : []);
   ltSubjects.forEach((s) => s.lessons.forEach((l) => l.cards.forEach((c) => { ltCounts[boxOf(c)]++; })));
+
+  // "Nya ord" per period: datum då kort i scope studerades första gången (en gång per kort)
+  const fsMap = loadFirstStudied();
+  const seenK = new Set();
+  const firstDates = [];
+  ltSubjects.forEach((s) => s.lessons.forEach((l) => l.cards.forEach((c) => {
+    const k = cardKeyOf(c); if (seenK.has(k)) return; seenK.add(k);
+    const d = fsMap[k]; if (d) firstDates.push(d);
+  })));
   const ltMax = Math.max(1, ...ltCounts);
   const LT_LABELS = ["Ny", "1d", "2d", "4d", "8d", "16d", "32d"];
   const leitner = ltCounts.map((n, i) =>
@@ -1066,7 +1092,8 @@ function renderStats() {
     const kort = pRecs.reduce((a, r) => a + (r.cards || 0), 0);
     const min = Math.round(pRecs.reduce((a, r) => a + (r.ms || 0), 0) / 60000);
     const dagar = new Set(pRecs.map((r) => r.d)).size;
-    return { pass, kort, min, dagar };
+    const nya = firstDates.filter((d) => p === "all" || d >= cutoff).length;
+    return { pass, kort, min, dagar, nya };
   }
 
   body.innerHTML = `
@@ -1086,7 +1113,7 @@ function renderStats() {
     const k = periodKpis(period);
     grid.innerHTML = `
       <div class="st-b"><div class="st-v">${k.pass}</div><div class="st-l">PASS</div></div>
-      <div class="st-b"><div class="st-v">${k.kort}</div><div class="st-l">KORT</div></div>
+      <div class="st-b"><div class="st-v">${k.kort}</div><div class="st-l">KORT</div>${k.nya ? `<div class="st-sub">${k.nya} nya</div>` : ""}</div>
       <div class="st-b"><div class="st-v">${k.min}</div><div class="st-l">MINUTER</div></div>
       <div class="st-b"><div class="st-v">${k.dagar}</div><div class="st-l">DAGAR</div></div>`;
   };
@@ -2820,7 +2847,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v121";
+const APP_VERSION = "v122";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

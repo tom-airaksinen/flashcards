@@ -287,6 +287,7 @@ body {
 .st-b { flex: 1; text-align: center; background: var(--surface-2); border-radius: 12px; padding: 11px 6px; }
 .st-b .st-v { font-size: 1.25rem; font-weight: 700; }
 .st-b .st-l { color: var(--muted); font-size: 0.62rem; margin-top: 3px; letter-spacing: 0.03em; }
+.st-b .st-sub { color: var(--accent); font-size: 0.66rem; font-weight: 700; margin-top: 3px; }
 .st-period { margin: 10px 0 12px; }
 .st-sec { color: var(--muted); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em; margin: 18px 2px 6px; }
 .st-heatwrap { overflow-x: auto; padding-bottom: 4px; }
