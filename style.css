@@ -187,6 +187,7 @@ body {
 .ai-tip:not(.hidden) { animation: ai-reveal 0.2s ease-out; }
 @keyframes ai-reveal { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 .ai-tip-lead { color: var(--muted); font-size: 0.78rem; line-height: 1.45; margin-bottom: 10px; }
+.ai-app-link { color: var(--accent); font-weight: 600; text-decoration: none; }
 /* Hela prompt-rutan är tryckbar för att kopiera; ikonen (utan ram) uppe till höger */
 .ai-prompt-copy {
   position: relative; display: block; width: 100%; text-align: left;
@@ -247,6 +248,15 @@ body {
 .st-d.fut { visibility: hidden; }
 .st-legend { display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin-top: 10px; color: var(--muted); font-size: 0.66rem; }
 .st-legend .st-d { width: 12px; height: 12px; }
+
+/* Leitner-stapeldiagram (antal kort per låda) – samma färger som styrkebadgen */
+.st-leitner { display: flex; align-items: flex-end; gap: 6px; height: 110px; }
+.lt-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 5px; }
+.lt-num { font-size: 0.66rem; color: var(--text); font-weight: 600; min-height: 0.8em; }
+.lt-bar { width: 72%; min-height: 0; border-radius: 5px 5px 0 0; background: rgba(255, 255, 255, 0.08); }
+.lt-bar.b1 { background: #e05a4f; } .lt-bar.b2 { background: #e0915a; } .lt-bar.b3 { background: #f4c542; }
+.lt-bar.b4 { background: #8fbf5a; } .lt-bar.b5 { background: #5bbf72; } .lt-bar.b6 { background: #5b8cff; }
+.lt-lbl { font-size: 0.6rem; color: var(--muted); }
 .version-tag { margin-top: auto; text-align: center; color: var(--muted); font-size: 0.7rem; opacity: 0.55; padding: 10px 0 16px; }
 
 /* Riktning + kort per pass – pills med utfällbar väljare (lektionsskärmen) */

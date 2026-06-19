@@ -990,6 +990,21 @@ function openStats() {
     heat += `<div class="st-wk">${col}</div>`;
   }
 
+  // Leitner-fördelning: antal kort per låda (i vald riktning; mixed = svagaste lådan)
+  const dirMode = dirSelect.value;
+  const boxOf = (c) => {
+    const fb = (srs[srsKey(c, "f2b")] || {}).box || 0;
+    const bb = (srs[srsKey(c, "b2f")] || {}).box || 0;
+    return dirMode === "f2b" ? fb : dirMode === "b2f" ? bb : Math.min(fb, bb);
+  };
+  const ltCounts = [0, 0, 0, 0, 0, 0, 0];
+  currentSubject.lessons.forEach((l) => l.cards.forEach((c) => { ltCounts[boxOf(c)]++; }));
+  const ltMax = Math.max(1, ...ltCounts);
+  const LT_LABELS = ["Ny", "1d", "2d", "4d", "8d", "16d", "32d"];
+  const leitner = ltCounts.map((n, i) =>
+    `<div class="lt-col"><div class="lt-num">${n || ""}</div><div class="lt-bar b${i}" style="height:${n ? Math.max(6, Math.round(n / ltMax * 100)) : 0}%"></div><div class="lt-lbl">${LT_LABELS[i]}</div></div>`
+  ).join("");
+
   // Periodvalet kommer ihåg sig tills man byter
   const PERIODS = [{ v: "1", label: "Idag" }, { v: "7", label: "7 dagar" }, { v: "30", label: "30 dagar" }, { v: "all", label: "Totalt" }];
   let period = localStorage.getItem(STATS_PERIOD_KEY) || "30";
@@ -1012,6 +1027,8 @@ function openStats() {
     <div class="st-sec">SENASTE 18 VECKORNA</div>
     <div class="st-heatwrap"><div class="st-heat">${heat}</div></div>
     <div class="st-legend"><span>mindre</span><span class="st-d"></span><span class="st-d l1"></span><span class="st-d l2"></span><span class="st-d l3"></span><span class="st-d l4"></span><span>mer</span></div>
+    <div class="st-sec">LEITNER</div>
+    <div class="st-leitner">${leitner}</div>
     <div class="modal-actions"><button class="btn-primary" id="m-ok">Stäng</button></div>`);
   m.querySelector("#m-ok").onclick = closeModal;
 
@@ -1714,19 +1731,25 @@ function askSubject(title, name = "", lang = "", allowDelete = false) {
     const delBtn = allowDelete ? `<button class="full-btn danger" id="m-del">🗑 Ta bort ämne</button>` : "";
     const m = openModal(`
       <h3>${esc(title)}</h3>
-      <label>Namn</label>
-      <input type="text" id="m-name" value="${esc(name)}" autocomplete="off" />
       <label>Språk (för uttal)</label>
       <div id="m-lang-mount"></div>
+      <label>Namn</label>
+      <input type="text" id="m-name" value="${esc(name)}" autocomplete="off" />
       <div class="modal-actions">
         <button class="btn-secondary" id="m-cancel">Avbryt</button>
         <button class="btn-primary" id="m-ok">Spara</button>
       </div>${delBtn}`);
-    const langSel = buildSelect(langOptionsForPicker(lang), lang);
-    m.querySelector("#m-lang-mount").appendChild(langSel.el);
     const nameI = m.querySelector("#m-name");
-    nameI.focus();
-    nameI.select();
+    // När man väljer språk föreslås namnet – men bara om namnet är tomt eller är
+    // kvar på förra förslaget (så ett eget namn inte skrivs över).
+    let suggested = "";
+    const langSel = buildSelect(langOptionsForPicker(lang), lang, (code) => {
+      if (!code) return;
+      const cur = nameI.value.trim();
+      if (cur === "" || cur === suggested) { suggested = langLabel(code); nameI.value = suggested; }
+    });
+    m.querySelector("#m-lang-mount").appendChild(langSel.el);
+    if (name) { nameI.focus(); nameI.select(); } // fokusera bara vid redigering (befintligt namn)
     m.querySelector("#m-cancel").onclick = () => { closeModal(); resolve(null); };
     m.querySelector("#m-ok").onclick = () => {
       const n = nameI.value.trim();
@@ -2026,12 +2049,12 @@ function renderEditor() {
   const list = $("editor-list");
   if (!lesson.cards.length) {
     const lang = currentForeignLabel();
-    const aiPrompt = `Kan du ge mig 30 bra ord och fraser som handlar om "${lesson.name}" på ${lang}? Formatet ska vara ord/fras på ${lang};svensk översättning, en per rad`;
+    const aiPrompt = `Kan du ge mig 30 bra ord och fraser på temat "${lesson.name}" på ${lang}? Formatet ska vara ord/fras på ${lang};svensk översättning, en per rad`;
     // Renare tomt läge: AI-prompten är dold tills man trycker "ta hjälp av en AI".
     list.innerHTML = `
       <p class="empty">Inga ord än. Lägg till eller slå upp här ovanför, eller <button type="button" class="link-action" id="ai-help">ta hjälp av en AI</button>.</p>
       <div class="ai-tip hidden" id="ai-tip">
-        <p class="ai-tip-lead">Ge denna prompt till ChatGPT/Claude, kopiera sedan svaret och klistra in via ＋ Lägg till.</p>
+        <p class="ai-tip-lead">Ge denna prompt till <a class="ai-app-link" href="https://chatgpt.com" target="_blank" rel="noopener">ChatGPT</a>/<a class="ai-app-link" href="https://claude.ai" target="_blank" rel="noopener">Claude</a>, kopiera sedan svaret och klistra in via ＋ Lägg till.</p>
         <div class="ai-prompt-copy" id="ai-copy" role="button" tabindex="0" title="Tryck för att kopiera (eller markera manuellt)">
           <span class="ai-cp-icon" id="ai-cp-icon">${COPY_ICON_SVG}</span>
           <span class="ai-cp-text">${esc(aiPrompt)}</span>
@@ -2628,7 +2651,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v106";
+const APP_VERSION = "v107";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
