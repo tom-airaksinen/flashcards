@@ -76,12 +76,16 @@ body {
 .stats-scope { margin: 4px 0 6px; }
 .stats-scope .cs { width: 100%; }
 
-/* Bottenflikar */
-#tabbar { flex: none; display: flex; background: var(--surface); border-top: 1px solid #243352; padding-bottom: env(safe-area-inset-bottom); }
+/* Bottenflikar – diskret: samma bakgrund som sidan, bara en tunn avdelare */
+#tabbar {
+  flex: none; display: flex; justify-content: center; gap: 14px;
+  background: var(--bg); border-top: 1px solid #1c2742;
+  padding-bottom: max(2px, calc(env(safe-area-inset-bottom) - 14px));
+}
 .tab-btn {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   background: none; border: none; color: var(--muted);
-  padding: 8px 4px 7px; font-size: 0.66rem; font-weight: 600; font-family: inherit; cursor: pointer;
+  padding: 6px 22px 4px; font-size: 0.62rem; font-weight: 600; font-family: inherit; cursor: pointer;
   letter-spacing: 0.02em;
 }
 .tab-btn svg { display: block; }
