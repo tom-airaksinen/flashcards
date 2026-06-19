@@ -41,7 +41,10 @@ body {
   /* min-height (inte height) så body alltid fyller skärmen på iOS standalone-PWA –
      height:100dvh kan där resolvas till mindre än skärmen och lämna tomrum nedtill */
   min-height: 100dvh;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  /* Ingen safe-area nedtill på body – innehållet/bakgrunden får gå hela vägen ner.
+     Varje skärms understa element (listor, träningsfoten, version-taggen) lägger
+     själv till safe-area som inre utfyllnad, annars blev det dubbelt → stort gap. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
 }
 
 .hidden { display: none !important; }
@@ -122,7 +125,7 @@ body {
 /* flex:1 + min-height:0 → listan scrollar internt i den nu fixhöjda (100dvh) skärmen
    istället för att hela sidan växer/scrollar */
 .list {
-  padding: 8px 16px 24px; overflow-y: auto; flex: 1; min-height: 0;
+  padding: 8px 16px calc(20px + env(safe-area-inset-bottom)); overflow-y: auto; flex: 1; min-height: 0;
   /* Mjuk uttoning mot bakgrunden i nederkanten så långa listor inte klipps abrupt.
      Masken är förankrad till listans synliga botten → fadar bara när det finns mer nedanför. */
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 52px), transparent);
@@ -257,7 +260,7 @@ body {
 .lt-bar.b1 { background: #e05a4f; } .lt-bar.b2 { background: #e0915a; } .lt-bar.b3 { background: #f4c542; }
 .lt-bar.b4 { background: #8fbf5a; } .lt-bar.b5 { background: #5bbf72; } .lt-bar.b6 { background: #5b8cff; }
 .lt-lbl { font-size: 0.6rem; color: var(--muted); }
-.version-tag { margin-top: auto; text-align: center; color: var(--muted); font-size: 0.7rem; opacity: 0.55; padding: 10px 0 16px; }
+.version-tag { margin-top: auto; text-align: center; color: var(--muted); font-size: 0.7rem; opacity: 0.55; padding: 10px 0 calc(16px + env(safe-area-inset-bottom)); }
 
 /* Riktning + kort per pass – pills med utfällbar väljare (lektionsskärmen) */
 .opt-row { display: flex; gap: 10px; margin: 0 16px 10px; }
