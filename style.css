@@ -824,6 +824,8 @@ body {
 .cs-opt.on { background: var(--accent); color: #fff; font-weight: 600; }
 
 .modal-hint { font-size: 0.8rem; color: var(--muted); }
+.dup-list { margin: 6px 0 2px; padding-left: 1.2em; color: var(--text); font-size: 0.95rem; line-height: 1.55; }
+.dup-lesson { color: var(--muted); font-size: 0.85em; }
 .modal-actions { display: flex; gap: 10px; margin-top: 4px; }
 .modal-actions button {
   flex: 1;

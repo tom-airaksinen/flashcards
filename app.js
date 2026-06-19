@@ -1762,6 +1762,41 @@ function askSubject(title, name = "", lang = "", allowDelete = false) {
   });
 }
 
+// Dubblettkontroll: kollar om de utländska orden (front) redan finns i området
+// (case-insensitive). Returnerar korten som ska läggas till, eller null vid avbryt.
+function confirmDuplicates(subject, cards) {
+  return new Promise((resolve) => {
+    const where = new Map(); // normaliserad front -> lektionsnamn (första träffen)
+    subject.lessons.forEach((l) => l.cards.forEach((c) => {
+      const k = normPart(c.front);
+      if (k && !where.has(k)) where.set(k, l.name);
+    }));
+    const isDup = (c) => where.has(normPart(c.front));
+    const dups = cards.filter(isDup);
+    if (!dups.length) { resolve(cards); return; }
+    const nonDups = cards.filter((c) => !isDup(c));
+    let title, body;
+    if (dups.length === 1) {
+      title = "Dubblett";
+      const f = dups[0].front.trim();
+      const word = f.charAt(0).toUpperCase() + f.slice(1);
+      body = `<p class="modal-hint">${esc(word)} finns redan (i ${esc(where.get(normPart(dups[0].front)))}).</p>`;
+    } else {
+      title = "Dubbletter";
+      const items = dups.map((c) => `<li>${esc(c.front.trim())} <span class="dup-lesson">(${esc(where.get(normPart(c.front)))})</span></li>`).join("");
+      body = `<p class="modal-hint">Följande ord finns redan:</p><ul class="dup-list">${items}</ul>`;
+    }
+    const m = openModal(`<h3>${title}</h3>${body}
+      <div class="modal-actions">
+        <button class="btn-secondary" id="dup-skip">Hoppa över</button>
+        <button class="btn-primary" id="dup-add">Lägg till igen</button>
+      </div>`);
+    modalRoot.querySelector(".modal-backdrop").addEventListener("click", () => resolve(null));
+    m.querySelector("#dup-skip").onclick = () => { closeModal(); resolve(nonDups); };
+    m.querySelector("#dup-add").onclick = () => { closeModal(); resolve(cards); };
+  });
+}
+
 function askWords() {
   return new Promise((resolve) => {
     const m = openModal(`
@@ -2159,8 +2194,11 @@ $("add-words").onclick = async () => {
   if (!lesson) return;
   const text = await askWords();
   if (text == null) return;
-  const cards = parseLines(text);
-  if (!cards.length) { flash("Inga giltiga rader (format: ord;översättning)"); return; }
+  const parsed = parseLines(text);
+  if (!parsed.length) { flash("Inga giltiga rader (format: ord;översättning)"); return; }
+  const cards = await confirmDuplicates(currentSubject, parsed);
+  if (!cards) return;                                          // avbröt
+  if (!cards.length) { flash("Inget nytt – alla fanns redan", 2500); return; }
   await addCards(currentSubject.id, lesson.id, cards);
   flash(`La till ${cards.length} ord ✓`, 2000);
 };
@@ -2279,7 +2317,7 @@ function openTranslate(defaultLessonId, prefill) {
   if (prefill) { srcI.value = prefill; lookup(); }
 
   m.querySelector("#m-cancel").onclick = closeModal;
-  m.querySelector("#t-add").onclick = () => {
+  m.querySelector("#t-add").onclick = async () => {
     const srcParts = splitTerms(srcI.value);
     const dstParts = splitTerms(dstI.value);
     if (!srcParts.length || !dstParts.length) { toast("Fyll i båda fälten (slå upp eller skriv själv)", 3000); return; }
@@ -2292,14 +2330,15 @@ function openTranslate(defaultLessonId, prefill) {
       const dp = dstParts[i];
       return dir === "sv2for" ? { front: dp, back: sp } : { front: sp, back: dp };
     });
-    let lessonId = lessonSel.value;
-    if (lessonId === "__new__") {
-      const name = newLessonI.value.trim();
-      if (!name) { toast("Ange namn på den nya lektionen", 3000); return; }
-      lessonId = createLessonReturning(currentSubject.id, name);
-    }
-    addCards(currentSubject.id, lessonId, cards);
-    flash(cards.length === 1 ? `La till "${cards[0].front}" ✓` : `La till ${cards.length} ord ✓`, 2000);
+    // läs lektionsval INNAN dubblettdialogen (som ersätter denna modal)
+    const newName = lessonSel.value === "__new__" ? newLessonI.value.trim() : null;
+    if (lessonSel.value === "__new__" && !newName) { toast("Ange namn på den nya lektionen", 3000); return; }
+    const finalCards = await confirmDuplicates(currentSubject, cards);
+    if (!finalCards) return;                                   // avbröt
+    if (!finalCards.length) { toast("Inget nytt – alla fanns redan", 3000); return; }
+    const lessonId = newName ? createLessonReturning(currentSubject.id, newName) : lessonSel.value;
+    addCards(currentSubject.id, lessonId, finalCards);
+    flash(finalCards.length === 1 ? `La till "${finalCards[0].front}" ✓` : `La till ${finalCards.length} ord ✓`, 2000);
     closeModal();
   };
 }
@@ -2651,7 +2690,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v108";
+const APP_VERSION = "v109";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
