@@ -287,9 +287,9 @@ body {
 .st-b { flex: 1; text-align: center; background: var(--surface-2); border-radius: 12px; padding: 11px 6px; }
 .st-b .st-v { font-size: 1.25rem; font-weight: 700; }
 .st-b .st-l { color: var(--muted); font-size: 0.62rem; margin-top: 3px; letter-spacing: 0.03em; }
-/* KORT-rutan delas i två: KORT | NYA */
-.st-split { display: flex; align-items: center; }
-.st-split .st-half { flex: 1; }
+/* KORT-rutan delas i två: KORT | NYA – tät, centrerad enhet (tyngd i mitten) */
+.st-split { display: flex; align-items: center; justify-content: center; }
+.st-split .st-half { flex: none; padding: 0 13px; }
 .st-split .st-half + .st-half { border-left: 1px solid #2c3c63; }
 .st-split .st-half.nya .st-v { color: var(--accent); }
 .st-period { margin: 10px 0 12px; }
