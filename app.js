@@ -527,6 +527,9 @@ function renderSubjects() {
   const pill = $("user-pill");
   pill.textContent = currentUser ? `👤 ${userName(currentUser)} ▾` : "👤 Vem är du? ▾";
   const list = $("subjects-list");
+  // Göm ＋/⋯ tills man valt vem man är (inget att lägga till/säkerhetskopiera ännu)
+  $("add-subject").classList.toggle("hidden", !currentUser);
+  $("menu-btn").classList.toggle("hidden", !currentUser);
 
   // Ingen profil vald (t.ex. ny enhet) → tomt läge
   if (!currentUser) {
@@ -1008,7 +1011,7 @@ function renderStats() {
   const today = new Date(); today.setHours(12, 0, 0, 0);
 
   if (!Object.keys(byDate).length) {
-    body.innerHTML = `<p class="empty" style="padding:24px 0">Ingen statistik än – kör ett pass så börjar det fyllas! 🚀</p>`;
+    body.innerHTML = `<p class="empty" style="padding:24px 0">Ingen statistik än – kör ett pass så börjar det fyllas på! 🚀</p>`;
     return;
   }
 
@@ -2751,7 +2754,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v113";
+const APP_VERSION = "v114";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
