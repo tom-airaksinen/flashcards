@@ -2282,7 +2282,7 @@ function showAchievement(kind) {
   }
   requestAnimationFrame(() => el.classList.add("show"));
   el.addEventListener("click", dismissAchievement);
-  achTimer = setTimeout(dismissAchievement, 4200);
+  achTimer = setTimeout(dismissAchievement, kind === "week" ? 3000 : 4200);
 }
 
 // Stiliserade ikoner (två omlott-rutor = kopiera; bock = klar)
