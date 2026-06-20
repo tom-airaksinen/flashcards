@@ -1300,8 +1300,8 @@ function finishSession() {
     const gp = getUnitProgress(currentSubject.id);
     const dayDone = gp.dayCount >= DAILY_GOAL, weekDone = gp.weekCount >= WEEKLY_GOAL;
     goalsEl.innerHTML =
-      `<div class="cg-goal ${dayDone ? "done" : ""}">💪 ${dayDone ? `${DAILY_GOAL} olika ord idag! ✓` : `${gp.dayCount} / ${DAILY_GOAL} olika ord idag`}</div>` +
-      `<div class="cg-goal ${weekDone ? "done" : ""}">🏆 ${weekDone ? `${WEEKLY_GOAL} ord denna vecka! ✓` : `${gp.weekCount} / ${WEEKLY_GOAL} denna vecka`}</div>`;
+      `<div class="cg-goal ${dayDone ? "done" : ""}">💪 ${dayDone ? `${DAILY_GOAL} olika kort idag! ✓` : `${gp.dayCount} / ${DAILY_GOAL} olika ord idag`}</div>` +
+      `<div class="cg-goal ${weekDone ? "done" : ""}">🏆 ${weekDone ? `${WEEKLY_GOAL} kort denna vecka! ✓` : `${gp.weekCount} / ${WEEKLY_GOAL} denna vecka`}</div>`;
   } else {
     goalsEl.innerHTML = "";
   }
