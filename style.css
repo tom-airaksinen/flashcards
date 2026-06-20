@@ -287,7 +287,6 @@ body {
 .st-b { flex: 1; text-align: center; background: var(--surface-2); border-radius: 12px; padding: 11px 6px; }
 .st-b .st-v { font-size: 1.25rem; font-weight: 700; }
 .st-b .st-l { color: var(--muted); font-size: 0.62rem; margin-top: 3px; letter-spacing: 0.03em; }
-.st-period { margin: 10px 0 12px; }
 .st-sec { color: var(--muted); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em; margin: 18px 2px 6px; }
 .st-heatwrap { overflow-x: auto; padding-bottom: 4px; }
 .st-heat { display: flex; gap: 4px; width: max-content; }
@@ -335,6 +334,30 @@ body {
 }
 .opt-segs.wrap button { flex: 1 0 26%; }
 .opt-segs button.on { background: var(--accent); color: #fff; font-weight: 600; }
+
+/* Periodväljaren i statistiken = segmented control (indragen mörk track, egen
+   bakgrund som skiljer sig från KPI-korten). Scopas till .st-period så lektions-
+   skärmens .opt-segs-väljare inte påverkas. */
+.st-period {
+  gap: 4px;
+  background: #0a1020;
+  border: 1px solid #1c2742;
+  border-radius: 11px;
+  padding: 4px;
+  margin: 10px 0 12px;
+}
+.st-period button {
+  background: transparent;
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 9px 6px;
+  font-size: 0.84rem;
+}
+.st-period button.on {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
 .opt-sub { color: var(--muted); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; margin: 12px 2px 8px; }
 .opt-note { color: var(--muted); font-size: 0.72rem; margin: 8px 2px 0; line-height: 1.4; }
 
