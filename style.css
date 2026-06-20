@@ -373,7 +373,7 @@ body {
 .opt-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .opt-lbl { color: var(--muted); font-size: 0.66rem; letter-spacing: 0.04em; white-space: nowrap; }
 .opt-val { font-size: 0.95rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.opt-car { color: var(--muted); font-size: 0.8rem; flex: none; }
+.opt-car { color: var(--muted); font-size: 1.05rem; flex: none; }
 
 .opt-chooser { margin: 0 16px 10px; background: var(--surface); border-radius: 12px; padding: 10px; }
 .opt-segs { display: flex; gap: 8px; }
@@ -832,9 +832,9 @@ body {
   background: none;
   border: none;
   color: var(--muted);
-  font-size: 1rem;
+  font-size: 1.3rem;
   line-height: 1;
-  padding: 6px 8px;
+  padding: 6px 9px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -987,7 +987,7 @@ body {
   text-align: left;
 }
 .cs-btn .cs-cur { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cs-car { color: var(--muted); font-size: 0.8rem; flex: none; }
+.cs-car { color: var(--muted); font-size: 1.05rem; flex: none; }
 .cs-list {
   margin-top: 8px;
   background: var(--surface-2);

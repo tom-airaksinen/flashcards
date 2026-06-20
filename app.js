@@ -1300,8 +1300,8 @@ function finishSession() {
     const gp = getUnitProgress(currentSubject.id);
     const dayDone = gp.dayCount >= DAILY_GOAL, weekDone = gp.weekCount >= WEEKLY_GOAL;
     goalsEl.innerHTML =
-      `<div class="cg-goal ${dayDone ? "done" : ""}">💪 ${dayDone ? `${DAILY_GOAL} olika kort idag! ✓` : `${gp.dayCount} / ${DAILY_GOAL} olika ord idag`}</div>` +
-      `<div class="cg-goal ${weekDone ? "done" : ""}">🏆 ${weekDone ? `${WEEKLY_GOAL} kort denna vecka! ✓` : `${gp.weekCount} / ${WEEKLY_GOAL} denna vecka`}</div>`;
+      `<div class="cg-goal ${dayDone ? "done" : ""}">💪 ${dayDone ? `${DAILY_GOAL} olika kort idag! ✓` : `${gp.dayCount} / ${DAILY_GOAL} olika kort idag`}</div>` +
+      `<div class="cg-goal ${weekDone ? "done" : ""}">🏆 ${weekDone ? `${WEEKLY_GOAL} kort denna vecka! ✓` : `${gp.weekCount} / ${WEEKLY_GOAL} kort denna vecka`}</div>`;
   } else {
     goalsEl.innerHTML = "";
   }
@@ -2241,10 +2241,10 @@ function showAchievement(kind) {
   if (kind === "week") {
     el.innerHTML = `<div class="ach-confetti"></div>
       <div class="ach-badge">🏆</div>
-      <div class="ach-txt"><b>${WEEKLY_GOAL} olika ord denna vecka</b><span>Smått overkligt!</span></div>`;
+      <div class="ach-txt"><b>${WEEKLY_GOAL} olika kort denna vecka</b><span>Smått overkligt!</span></div>`;
   } else {
     el.innerHTML = `<div class="ach-badge">💪</div>
-      <div class="ach-txt"><b>${DAILY_GOAL} olika ord idag!</b><span>Bra jobbat!</span></div>`;
+      <div class="ach-txt"><b>${DAILY_GOAL} olika kort idag!</b><span>Bra jobbat!</span></div>`;
   }
   document.body.appendChild(el);
   if (kind === "week") {
@@ -3131,7 +3131,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v136";
+const APP_VERSION = "v137";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
