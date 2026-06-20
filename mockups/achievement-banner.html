@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Achievement-banner – förslag</title>
+</head>
+<body>
+<style>
+  :root{
+    --bg:#0d1426; --surface:#16203a; --surface-2:#1f2c4d; --text:#eaf0fb;
+    --muted:#9aa3b2; --accent:#5b8cff; --gold:#ffd24a; --green:#8fbf5a; --fire:#ff8a3d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#070b16;color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:24px 16px 60px;}
+  h1{font-size:1.3rem;margin:0 0 4px}
+  .lede{color:var(--muted);font-size:.9rem;margin:0 0 20px;line-height:1.5}
+  .playall{appearance:none;border:none;background:var(--accent);color:#fff;font:inherit;font-weight:700;
+    padding:10px 16px;border-radius:10px;cursor:pointer;margin-bottom:28px}
+  .grid{display:flex;flex-wrap:wrap;gap:26px}
+  .col{flex:1 1 300px;max-width:380px}
+  .cap{margin:12px 2px 0}
+  .cap b{display:block;font-size:.95rem}
+  .cap span{color:var(--muted);font-size:.82rem;line-height:1.45;display:block;margin-top:2px}
+  .replay{appearance:none;margin-top:10px;border:1px solid #2c3c63;background:var(--surface-2);
+    color:var(--text);font:inherit;font-size:.8rem;padding:7px 12px;border-radius:9px;cursor:pointer}
+
+  /* Telefon-ram som visar appens överkant */
+  .phone{position:relative;height:300px;border-radius:26px;overflow:hidden;
+    background:var(--bg);border:1px solid #1c2742;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  .phone .status{height:22px;background:linear-gradient(#0b1120,transparent)}
+  .phone .appbar{display:flex;align-items:center;gap:8px;padding:10px 14px;color:var(--text);font-weight:700}
+  .phone .appbar .dot{width:18px;height:18px;border-radius:5px;background:var(--accent);opacity:.8}
+  .phone .ghost{margin:8px 14px;height:46px;border-radius:12px;background:var(--surface-2);opacity:.5}
+  .phone .ghost.big{height:150px;border-radius:18px;margin-top:14px;opacity:.35}
+
+  /* Gemensam banner-bas: överkant, nästan fullbredd, glider in ovanifrån */
+  .ach{position:absolute;left:12px;right:12px;top:12px;z-index:5;
+    transform:translateY(-160%);opacity:0;transition:transform .55s cubic-bezier(.18,.9,.3,1.2),opacity .35s ease;}
+  .ach.show{transform:translateY(0);opacity:1}
+
+  /* ---- Variant 1: Guldkant-glas ---- */
+  .v1{display:flex;align-items:center;gap:13px;padding:13px 15px;border-radius:16px;
+    background:rgba(22,32,58,.92);backdrop-filter:blur(8px);
+    border:1px solid rgba(255,210,74,.45);
+    box-shadow:0 10px 26px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.04);}
+  .v1::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:16px 0 0 16px;
+    background:linear-gradient(var(--gold),var(--fire))}
+  .v1 .badge{flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:1.4rem;
+    background:radial-gradient(circle at 30% 30%,rgba(255,210,74,.35),rgba(255,210,74,.12));
+    box-shadow:0 0 0 1px rgba(255,210,74,.4)}
+  .v1 .txt b{font-size:1rem;font-weight:800}
+  .v1 .txt span{display:block;color:var(--muted);font-size:.78rem;margin-top:1px}
+
+  /* ---- Variant 2: Accent-glöd (frostat) ---- */
+  .v2{position:relative;display:flex;align-items:center;gap:13px;padding:15px 16px;border-radius:16px;overflow:hidden;
+    background:linear-gradient(135deg,rgba(91,140,255,.22),rgba(22,32,58,.95));
+    backdrop-filter:blur(10px);border:1px solid rgba(91,140,255,.5);
+    box-shadow:0 10px 30px rgba(20,40,110,.45)}
+  .v2 .emoji{flex:none;font-size:1.7rem;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))}
+  .v2 .txt b{font-size:1.02rem;font-weight:800;letter-spacing:.01em}
+  .v2 .txt span{display:block;color:#c2d2ff;font-size:.78rem;margin-top:1px}
+  .v2 .shine{position:absolute;top:0;bottom:0;width:40%;left:-50%;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.16),transparent);transform:skewX(-18deg)}
+  .ach.show .v2 .shine{animation:sweep 1.1s ease .25s 1}
+  @keyframes sweep{from{left:-50%}to{left:130%}}
+
+  /* ---- Variant 3: Firande-pop (gradient-pill + konfetti) ---- */
+  .v3{position:relative;display:flex;align-items:center;gap:13px;padding:13px 16px;border-radius:18px;
+    background:linear-gradient(120deg,var(--gold),var(--fire));
+    box-shadow:0 12px 28px rgba(255,138,61,.4)}
+  .v3 .badge{flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:1.4rem;
+    background:rgba(255,255,255,.9);box-shadow:0 2px 8px rgba(0,0,0,.25)}
+  .v3 .txt b{font-size:1.02rem;font-weight:900;color:#3a2400}
+  .v3 .txt span{display:block;color:#6b4a12;font-size:.78rem;font-weight:700;margin-top:1px}
+  .confetti{position:absolute;left:0;right:0;top:0;height:0;pointer-events:none}
+  .confetti i{position:absolute;top:6px;width:7px;height:7px;border-radius:2px;opacity:0}
+  .ach.show .confetti i{animation:burst .9s ease-out .1s 1}
+  @keyframes burst{0%{opacity:1;transform:translateY(0) scale(.6) rotate(0)}
+    100%{opacity:0;transform:translateY(-46px) scale(1) rotate(220deg)}}
+</style>
+
+<h1>💪 Achievement-banner — 3 förslag</h1>
+<p class="lede">Glider in ovanifrån, sitter i överkant nästan fullbredd (med marginal). Tryck <b>Spela upp</b> för att se inglidningen igen. Alla spelas upp automatiskt när sidan laddas.</p>
+<button class="playall" onclick="playAll()">▶ Spela upp alla</button>
+
+<div class="grid">
+  <!-- Variant 1 -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"></div>
+      <div class="appbar"><span class="dot"></span> Flippa</div>
+      <div class="ghost"></div><div class="ghost big"></div>
+      <div class="ach" id="b1">
+        <div class="v1">
+          <div class="badge">💪</div>
+          <div class="txt"><b>150 olika ord idag!</b><span>Dagens mål klarat</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>1 · Guldkant-glas</b><span>Mörkt frostat glas, varm guld→orange-kant. Lugnt och elegant, “fint diplom”-känsla.</span></div>
+    <button class="replay" onclick="play('b1')">↻ Spela upp</button>
+  </div>
+
+  <!-- Variant 2 -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"></div>
+      <div class="appbar"><span class="dot"></span> Flippa</div>
+      <div class="ghost"></div><div class="ghost big"></div>
+      <div class="ach" id="b2">
+        <div class="v2">
+          <span class="shine"></span>
+          <div class="emoji">💪</div>
+          <div class="txt"><b>150 olika ord idag!</b><span>Dagens mål klarat</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>2 · Accent-glöd</b><span>Appens blå accent med en ljusstrimma som sveper förbi en gång. Modernt och “premium”.</span></div>
+    <button class="replay" onclick="play('b2')">↻ Spela upp</button>
+  </div>
+
+  <!-- Variant 3 -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"></div>
+      <div class="appbar"><span class="dot"></span> Flippa</div>
+      <div class="ghost"></div><div class="ghost big"></div>
+      <div class="ach" id="b3">
+        <div class="v3">
+          <div class="confetti" id="cf3"></div>
+          <div class="badge">💪</div>
+          <div class="txt"><b>150 olika ord idag!</b><span>Dagens mål klarat</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>3 · Firande-pop</b><span>Full guld→orange-gradient med en liten konfettiskur. Mest festligt och energiskt.</span></div>
+    <button class="replay" onclick="play('b3')">↻ Spela upp</button>
+  </div>
+</div>
+
+<script>
+  // bygg konfetti för variant 3
+  (function(){
+    const cols=['#fff','#5b8cff','#8fbf5a','#ffd24a','#ff8a3d'];
+    const cf=document.getElementById('cf3');
+    for(let i=0;i<12;i++){const s=document.createElement('i');
+      s.style.left=(8+i*7.5)+'%';s.style.background=cols[i%cols.length];
+      s.style.animationDelay=(0.1+(i%4)*0.05)+'s';cf.appendChild(s);}
+  })();
+  function play(id){const el=document.getElementById(id);el.classList.remove('show');
+    void el.offsetWidth;el.classList.add('show');}
+  function playAll(){['b1','b2','b3'].forEach((id,i)=>setTimeout(()=>play(id),i*220));}
+  window.addEventListener('load',()=>setTimeout(playAll,350));
+</script>
+</body>
+</html>
