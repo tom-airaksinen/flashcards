@@ -1433,8 +1433,8 @@ function answer(grade) {
   // Flipp-mål: distinkt ord+riktning per dag/vecka → firande vid milstolpe
   const flip = recordUnitFlip(c, dir);
   if (flip) {
-    if (flip.crossedWeek) toast(`🏆 ${WEEKLY_GOAL} ord denna vecka!`, 4000);
-    else if (flip.crossedDay) toast(`💪 ${DAILY_GOAL} olika ord idag!`, 4000);
+    if (flip.crossedWeek) showAchievement("week");
+    else if (flip.crossedDay) showAchievement("day");
   }
   // Snapshot för shake-to-undo (innan någon mutation): kö, SRS-poster, graded-medlemskap.
   const gradedKey = c.id + ":" + dir;
@@ -2221,6 +2221,46 @@ function parseLines(text) {
 function flash(msg, ms = 3000) {
   showStatus(msg);
   setTimeout(() => showStatus(null), ms);
+}
+
+// Achievement-banner som glider in ovanifrån vid milstolpe. kind: "day" | "week".
+let achTimer = null;
+function dismissAchievement() {
+  const el = $("achievement");
+  if (!el) return;
+  el.classList.remove("show");
+  setTimeout(() => el.remove(), 450);
+}
+function showAchievement(kind) {
+  dismissAchievement();
+  const old = $("achievement"); if (old) old.remove();
+  clearTimeout(achTimer);
+  const el = document.createElement("div");
+  el.id = "achievement";
+  el.className = "ach-banner " + (kind === "week" ? "ach-week" : "ach-day");
+  if (kind === "week") {
+    el.innerHTML = `<div class="ach-confetti"></div>
+      <div class="ach-badge">🏆</div>
+      <div class="ach-txt"><b>${WEEKLY_GOAL} olika ord denna vecka</b><span>Smått overkligt!</span></div>`;
+  } else {
+    el.innerHTML = `<div class="ach-badge">💪</div>
+      <div class="ach-txt"><b>${DAILY_GOAL} olika ord idag!</b><span>Bra jobbat!</span></div>`;
+  }
+  document.body.appendChild(el);
+  if (kind === "week") {
+    const cf = el.querySelector(".ach-confetti");
+    const cols = ["#fff", "#5b8cff", "#8fbf5a", "#ffd24a", "#ff8a3d"];
+    for (let i = 0; i < 12; i++) {
+      const s = document.createElement("i");
+      s.style.left = (8 + i * 7.5) + "%";
+      s.style.background = cols[i % cols.length];
+      s.style.animationDelay = (0.1 + (i % 4) * 0.05) + "s";
+      cf.appendChild(s);
+    }
+  }
+  requestAnimationFrame(() => el.classList.add("show"));
+  el.addEventListener("click", dismissAchievement);
+  achTimer = setTimeout(dismissAchievement, 4200);
 }
 
 // Stiliserade ikoner (två omlott-rutor = kopiera; bock = klar)
@@ -3091,7 +3131,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v133";
+const APP_VERSION = "v134";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

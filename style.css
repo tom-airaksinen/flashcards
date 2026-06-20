@@ -276,6 +276,53 @@ body {
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+/* Achievement-banner: glider in ovanifrån, sitter i överkant nästan fullbredd */
+.ach-banner {
+  position: fixed; left: 12px; right: 12px; top: calc(12px + env(safe-area-inset-top));
+  z-index: 500; cursor: pointer;
+  transform: translateY(-170%); opacity: 0;
+  transition: transform 0.55s cubic-bezier(.18,.9,.3,1.2), opacity 0.35s ease;
+}
+.ach-banner.show { transform: translateY(0); opacity: 1; }
+.ach-badge { flex: none; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-size: 1.4rem; }
+.ach-txt b { display: block; }
+.ach-txt span { display: block; font-size: 0.78rem; margin-top: 1px; }
+
+/* Dag (variant 1) – guldkant-glas */
+.ach-day {
+  display: flex; align-items: center; gap: 13px; padding: 13px 15px; border-radius: 16px;
+  background: rgba(22,32,58,0.94); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,210,74,0.45);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+.ach-day::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 16px 0 0 16px;
+  background: linear-gradient(#ffd24a, #ff8a3d);
+}
+.ach-day .ach-badge {
+  background: radial-gradient(circle at 30% 30%, rgba(255,210,74,0.35), rgba(255,210,74,0.12));
+  box-shadow: 0 0 0 1px rgba(255,210,74,0.4);
+}
+.ach-day .ach-txt b { font-size: 1rem; font-weight: 800; color: var(--text); }
+.ach-day .ach-txt span { color: var(--muted); }
+
+/* Vecka (variant 3) – firande-pop med konfetti */
+.ach-week {
+  display: flex; align-items: center; gap: 13px; padding: 13px 16px; border-radius: 18px;
+  background: linear-gradient(120deg, #ffd24a, #ff8a3d);
+  box-shadow: 0 12px 28px rgba(255,138,61,0.45);
+}
+.ach-week .ach-badge { background: rgba(255,255,255,0.92); box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
+.ach-week .ach-txt b { font-size: 1.02rem; font-weight: 900; color: #3a2400; }
+.ach-week .ach-txt span { color: #6b4a12; font-weight: 700; }
+.ach-confetti { position: absolute; left: 0; right: 0; top: 0; height: 0; pointer-events: none; }
+.ach-confetti i { position: absolute; top: 6px; width: 7px; height: 7px; border-radius: 2px; opacity: 0; }
+.ach-banner.show .ach-confetti i { animation: ach-burst 0.9s ease-out 0.1s 1; }
+@keyframes ach-burst {
+  0% { opacity: 1; transform: translateY(0) scale(.6) rotate(0); }
+  100% { opacity: 0; transform: translateY(-46px) scale(1) rotate(220deg); }
+}
+
 /* Statistikvy (heatmap/streak) i modal */
 .icon-btn svg { display: block; }
 .st-hero { text-align: center; padding: 6px 0 14px; }
