@@ -599,6 +599,12 @@ function updateTabbar() {
   // Dölj flikfältet under pågående pass / klar-skärm i Flippa-fliken
   const hide = activeTab === "flippa" && (shownScreen === "training" || shownScreen === "congrats");
   $("tabbar").classList.toggle("hidden", hide);
+  // Flikfältet är fixed → reservera dess höjd på innehållet bara när det syns
+  document.body.classList.toggle("tabbar-on", !hide);
+  if (!hide) {
+    const h = $("tabbar").offsetHeight; // tvingar reflow → korrekt höjd (inkl. env-padding)
+    if (h) document.documentElement.style.setProperty("--tabbar-h", h + "px");
+  }
 }
 
 function renderCurrentScreen() {
@@ -3153,7 +3159,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v141";
+const APP_VERSION = "v142";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

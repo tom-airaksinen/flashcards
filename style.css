@@ -72,7 +72,7 @@ body {
 /* Statistik-fliken */
 #stats-screen {
   position: relative;
-  padding: 8px 16px calc(40px + env(safe-area-inset-bottom));
+  padding: 8px 16px 40px;
   /* Samma mjuka uttoning i nederkanten som listorna har */
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 52px), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 52px), transparent);
@@ -104,7 +104,7 @@ body {
 
 /* Hjälp-fliken */
 #help-screen {
-  padding: 8px 16px calc(40px + env(safe-area-inset-bottom));
+  padding: 8px 16px 40px;
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 52px), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 52px), transparent);
 }
@@ -122,12 +122,18 @@ body {
 .help-table th, .help-table td { border: 1px solid #243352; padding: 6px 10px; text-align: left; color: var(--muted); }
 .help-table th { color: var(--text); font-weight: 600; }
 
-/* Bottenflikar – diskret: samma bakgrund som sidan, bara en tunn avdelare */
+/* Bottenflikar – diskret: samma bakgrund som sidan, bara en tunn avdelare.
+   FIXED mot visuella viewportens botten → immun mot iOS standalone cold-launch-
+   buggen där 100dvh resolvar för kort och en in-flow-bar annars flöt upp ~en cm.
+   Innehållet (#app-main) reserverar barens höjd via --tabbar-h när den syns. */
 #tabbar {
-  flex: none; display: flex; justify-content: center; gap: 8px;
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  display: flex; justify-content: center; gap: 8px;
   background: var(--bg); border-top: 1px solid #1c2742;
   padding-bottom: max(2px, calc(env(safe-area-inset-bottom) - 30px));
 }
+/* Reservera barens höjd så inget innehåll göms bakom den (bara när baren syns) */
+body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
 .tab-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   background: none; border: none; color: var(--muted);
@@ -201,7 +207,7 @@ body {
 /* flex:1 + min-height:0 → listan scrollar internt i den nu fixhöjda (100dvh) skärmen
    istället för att hela sidan växer/scrollar */
 .list {
-  padding: 8px 16px calc(20px + env(safe-area-inset-bottom)); overflow-y: auto; flex: 1; min-height: 0;
+  padding: 8px 16px 20px; overflow-y: auto; flex: 1; min-height: 0;
   /* Mjuk uttoning mot bakgrunden i nederkanten så långa listor inte klipps abrupt.
      Masken är förankrad till listans synliga botten → fadar bara när det finns mer nedanför. */
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 52px), transparent);
@@ -385,7 +391,7 @@ body {
 .lt-bar.b1 { background: #e05a4f; } .lt-bar.b2 { background: #e0915a; } .lt-bar.b3 { background: #f4c542; }
 .lt-bar.b4 { background: #8fbf5a; } .lt-bar.b5 { background: #5bbf72; } .lt-bar.b6 { background: #5b8cff; }
 .lt-lbl { font-size: 0.6rem; color: var(--muted); }
-.version-tag { margin-top: auto; text-align: center; color: var(--muted); font-size: 0.7rem; opacity: 0.55; padding: 10px 0 calc(16px + env(safe-area-inset-bottom)); }
+.version-tag { margin-top: auto; text-align: center; color: var(--muted); font-size: 0.7rem; opacity: 0.55; padding: 10px 0 16px; }
 
 /* Riktning + kort per pass – pills med utfällbar väljare (lektionsskärmen) */
 .opt-row { display: flex; gap: 10px; margin: 0 16px; }
