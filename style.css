@@ -298,6 +298,9 @@ body {
 .st-d.l4 { background: var(--accent); }
 .st-d.today { box-shadow: 0 0 0 2px var(--easy); }
 .st-d.fut { visibility: hidden; }
+/* Guldprick på dagar som nått 150 distinkta ord */
+.st-d.goal { position: relative; }
+.st-d.goal::after { content: ""; position: absolute; inset: 0; margin: auto; width: 6px; height: 6px; border-radius: 50%; background: #ffd24a; box-shadow: 0 0 0 1px rgba(0,0,0,0.35); }
 .st-legend { display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin-top: 10px; color: var(--muted); font-size: 0.66rem; }
 .st-legend .st-d { width: 12px; height: 12px; }
 
@@ -723,6 +726,9 @@ body {
 .congrats-emoji { font-size: 4rem; }
 #congrats-screen h2 { font-size: 1.6rem; }
 #congrats-sub { color: var(--muted); }
+.congrats-goals { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; position: relative; z-index: 1; }
+.cg-goal { font-size: 0.9rem; color: var(--muted); }
+.cg-goal.done { color: var(--text); font-weight: 700; }
 #congrats-screen .primary-btn { margin-top: 12px; min-width: 160px; position: relative; z-index: 1; }
 .congrats-undo-hint { color: var(--muted); font-size: 0.78rem; margin-top: 10px; padding: 0 24px; position: relative; z-index: 1; line-height: 1.4; }
 .congrats-emoji { animation: congrats-pop 0.5s ease-out; }

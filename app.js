@@ -227,6 +227,74 @@ function markFirstStudied(card) {
 }
 
 // =========================================================================
+//  Flipp-mål: distinkta "ord + riktning" per dag (150) och per vecka (1000).
+//  Enhet = cardKey|dir. Samma ord åt två håll = två enheter; samma håll upprepat
+//  (t.ex. efter felsvar) = en. Räknas PER ÄMNE och per profil.
+// =========================================================================
+const UNITS_KEY = "flippa-units-v1";          // mängder per vecka: user → subject → datum → [cardKey|dir]
+const UNITCOUNT_KEY = "flippa-unitcount-v1";  // långsiktigt: user → subject → datum → antal (för heatmap)
+const DAILY_GOAL = 150;
+const WEEKLY_GOAL = 1000;
+function loadLS(key) { try { return JSON.parse(localStorage.getItem(key) || "{}") || {}; } catch { return {}; } }
+function unitUser() { return currentUser || "guest"; }
+function ymdLocal(d) { return d.toLocaleDateString("sv-SE"); }
+// Datumsträngar mån–sön för veckan som innehåller idag
+function currentWeekDates() {
+  const t = new Date(); t.setHours(12, 0, 0, 0);
+  const mon = new Date(t); mon.setDate(t.getDate() - ((t.getDay() + 6) % 7));
+  return Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); return ymdLocal(d); });
+}
+
+// Registrera en flipp. Returnerar { dayCount, weekCount, crossedDay, crossedWeek }.
+function recordUnitFlip(card, dir) {
+  const sid = currentSubject && currentSubject.id;
+  if (!sid) return null;
+  const user = unitUser();
+  const today = todayStr();
+  const unit = `${cardKeyOf(card)}|${dir}`;
+
+  // Veckomängder (rensas till innevarande vecka)
+  const units = loadLS(UNITS_KEY);
+  const us = ((units[user] || (units[user] = {}))[sid] || (units[user][sid] = {}));
+  const week = currentWeekDates(), weekSet = new Set(week);
+  Object.keys(us).forEach((d) => { if (!weekSet.has(d)) delete us[d]; });
+  const dayArr = us[today] || (us[today] = []);
+  const isNew = !dayArr.includes(unit);
+  if (isNew) dayArr.push(unit);
+  const distinctWeek = new Set(); week.forEach((d) => (us[d] || []).forEach((k) => distinctWeek.add(k)));
+  localStorage.setItem(UNITS_KEY, JSON.stringify(units));
+
+  const dayCount = dayArr.length, weekCount = distinctWeek.size;
+
+  // Långsiktig dagssiffra (för heatmap), rensad ~140 dagar
+  const counts = loadLS(UNITCOUNT_KEY);
+  const cs = ((counts[user] || (counts[user] = {}))[sid] || (counts[user][sid] = {}));
+  cs[today] = dayCount;
+  const cutoff = ymdLocal((() => { const d = new Date(); d.setDate(d.getDate() - 140); return d; })());
+  Object.keys(cs).forEach((d) => { if (d < cutoff) delete cs[d]; });
+  localStorage.setItem(UNITCOUNT_KEY, JSON.stringify(counts));
+
+  return { dayCount, weekCount, crossedDay: isNew && dayCount === DAILY_GOAL, crossedWeek: isNew && weekCount === WEEKLY_GOAL };
+}
+
+// Läs dagens + veckans distinkta för ett ämne (read-only, för Klar-skärmen)
+function getUnitProgress(sid) {
+  const us = ((loadLS(UNITS_KEY)[unitUser()] || {})[sid]) || {};
+  const dayCount = (us[todayStr()] || []).length;
+  const wk = new Set(); currentWeekDates().forEach((d) => (us[d] || []).forEach((k) => wk.add(k)));
+  return { dayCount, weekCount: wk.size };
+}
+
+// Dagar som nått 150 inom en scope (lista av ämnen) – summerar per-ämnessiffror
+function goalDaysForScope(subjects) {
+  const cu = loadLS(UNITCOUNT_KEY)[unitUser()] || {};
+  const perDay = {};
+  subjects.forEach((s) => { const cs = cu[s.id] || {}; Object.keys(cs).forEach((d) => { perDay[d] = (perDay[d] || 0) + cs[d]; }); });
+  const set = new Set(); Object.keys(perDay).forEach((d) => { if (perDay[d] >= DAILY_GOAL) set.add(d); });
+  return set;
+}
+
+// =========================================================================
 //  Daglig introduktion av nya ord (max 10/dag per ämne, proportionellt)
 // =========================================================================
 // "Dags att öva" tar in nya ord (låda 0) men släpper in högst 10 nya per dag
@@ -1040,6 +1108,8 @@ function renderStats() {
 
   // heatmap: 18 veckor, måndag överst, senaste veckan längst till höger (alltid hela historiken)
   const end = addD(today, 6 - ((today.getDay() + 6) % 7)); // söndag i innevarande vecka
+  // Dagar som nått 150 distinkta ord (inom vald scope) – guldmarkeras
+  const goalSet = goalDaysForScope(statsScope === "all" ? mine : (scopeSubject ? [scopeSubject] : []));
   let heat = "";
   for (let w = 17; w >= 0; w--) {
     let col = "";
@@ -1050,6 +1120,7 @@ function renderStats() {
       if (d > today) cls += " fut";
       else if (c) cls += c >= 52 ? " l4" : c >= 32 ? " l3" : c >= 12 ? " l2" : " l1";
       if (ymd(d) === ymd(today)) cls += " today";
+      if (goalSet.has(ymd(d)) && d <= today) cls += " goal";
       col += `<div class="${cls}"></div>`;
     }
     heat += `<div class="st-wk">${col}</div>`;
@@ -1223,6 +1294,18 @@ function finishSession() {
   $("congrats-sub").textContent = (session && session.note) || `${session ? session.label : ""} – klar! 🎉`;
   $("congrats-done").textContent = DONE_LABELS[Math.floor(Math.random() * DONE_LABELS.length)];
 
+  // Flipp-mål för aktuellt ämne: dagens + veckans distinkta ord
+  const goalsEl = $("congrats-goals");
+  if (currentSubject) {
+    const gp = getUnitProgress(currentSubject.id);
+    const dayDone = gp.dayCount >= DAILY_GOAL, weekDone = gp.weekCount >= WEEKLY_GOAL;
+    goalsEl.innerHTML =
+      `<div class="cg-goal ${dayDone ? "done" : ""}">💪 ${dayDone ? `150 olika ord idag! ✓` : `${gp.dayCount} / ${DAILY_GOAL} olika ord idag`}</div>` +
+      `<div class="cg-goal ${weekDone ? "done" : ""}">🏆 ${weekDone ? `1000 ord denna vecka! ✓` : `${gp.weekCount} / ${WEEKLY_GOAL} denna vecka`}</div>`;
+  } else {
+    goalsEl.innerHTML = "";
+  }
+
   // "Fortsätt"-knapp om man kör i pass och det finns mer kvar. Texten anpassas:
   // färre kvar än passlängden → "Ta de sista X direkt".
   const contBtn = $("congrats-continue");
@@ -1347,6 +1430,12 @@ function answer(grade) {
   // Statistik: räkna svar + unika kort i passet
   session.reviewCount = (session.reviewCount || 0) + 1;
   (session.cardSet || (session.cardSet = new Set())).add(c.id);
+  // Flipp-mål: distinkt ord+riktning per dag/vecka → firande vid milstolpe
+  const flip = recordUnitFlip(c, dir);
+  if (flip) {
+    if (flip.crossedWeek) toast("🏆 1000 ord denna vecka!", 4000);
+    else if (flip.crossedDay) toast("💪 150 olika ord idag!", 4000);
+  }
   // Snapshot för shake-to-undo (innan någon mutation): kö, SRS-poster, graded-medlemskap.
   const gradedKey = c.id + ":" + dir;
   const otherDir0 = dir === "f2b" ? "b2f" : "f2b";
@@ -3002,7 +3091,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v131";
+const APP_VERSION = "v132";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
