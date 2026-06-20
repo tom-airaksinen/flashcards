@@ -233,7 +233,7 @@ function markFirstStudied(card) {
 // =========================================================================
 const UNITS_KEY = "flippa-units-v1";          // mängder per vecka: user → subject → datum → [cardKey|dir]
 const UNITCOUNT_KEY = "flippa-unitcount-v1";  // långsiktigt: user → subject → datum → antal (för heatmap)
-const DAILY_GOAL = 5; // TILLFÄLLIGT sänkt för test – ändra tillbaka till 150
+const DAILY_GOAL = 25; // TILLFÄLLIGT sänkt för test – ändra tillbaka till 150
 const WEEKLY_GOAL = 1000;
 function loadLS(key) { try { return JSON.parse(localStorage.getItem(key) || "{}") || {}; } catch { return {}; } }
 function unitUser() { return currentUser || "guest"; }
@@ -2228,8 +2228,8 @@ let achTimer = null;
 function dismissAchievement() {
   const el = $("achievement");
   if (!el) return;
-  el.classList.remove("show");
-  setTimeout(() => el.remove(), 450);
+  el.classList.remove("show"); // glider tillbaka upp (transform-transition 0.55s)
+  setTimeout(() => el.remove(), 600);
 }
 function showAchievement(kind) {
   dismissAchievement();
@@ -3131,7 +3131,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v134";
+const APP_VERSION = "v135";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
