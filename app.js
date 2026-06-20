@@ -1101,7 +1101,7 @@ function renderStats() {
   const sel = buildSelect(items, statsScope, (v) => { statsScope = v; renderStats(); });
   $("st-scope").appendChild(sel.el);
   // Klick utanför väljaren stänger den (buildSelect:s egen logik letar efter .modal)
-  host.onclick = (e) => { if (!e.target.closest(".cs")) host.querySelectorAll(".cs-list").forEach((o) => o.classList.add("hidden")); };
+  host.onclick = (e) => { if (!e.target.closest(".cs")) host.querySelectorAll(".cs-list").forEach((o) => o.classList.remove("open")); };
 
   const body = $("st-body");
   const recs = getStats().filter((r) => r && (!currentUser || r.user === currentUser) && (statsScope === "all" || r.subject === subjName));
@@ -1993,12 +1993,12 @@ function buildSelect(items, selected, onChange) {
   const labelFor = (v) => (items.find((i) => i.value === v) || {}).label || "";
   el.innerHTML = `
     <button type="button" class="cs-btn"><span class="cs-cur">${esc(labelFor(cur))}</span><span class="cs-car">▾</span></button>
-    <div class="cs-list hidden">${items
+    <div class="cs-list">${items
       .map((i) => `<button type="button" class="cs-opt ${i.value === cur ? "on" : ""}" data-v="${esc(i.value)}">${esc(i.label)}</button>`)
       .join("")}</div>`;
   const btn = el.querySelector(".cs-btn");
   const list = el.querySelector(".cs-list");
-  const close = () => list.classList.add("hidden");
+  const close = () => list.classList.remove("open");
   const apply = (v, fire) => {
     cur = v;
     el.querySelector(".cs-cur").textContent = labelFor(cur);
@@ -2008,8 +2008,8 @@ function buildSelect(items, selected, onChange) {
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     // stäng ev. andra öppna väljare i samma modal
-    el.closest(".modal")?.querySelectorAll(".cs-list").forEach((o) => { if (o !== list) o.classList.add("hidden"); });
-    list.classList.toggle("hidden");
+    el.closest(".modal")?.querySelectorAll(".cs-list").forEach((o) => { if (o !== list) o.classList.remove("open"); });
+    list.classList.toggle("open");
   });
   list.querySelectorAll(".cs-opt").forEach((opt) => {
     opt.addEventListener("click", (e) => { e.stopPropagation(); apply(opt.dataset.v, true); close(); });
@@ -3147,7 +3147,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v139";
+const APP_VERSION = "v140";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
