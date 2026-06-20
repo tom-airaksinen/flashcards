@@ -130,14 +130,17 @@ body {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
   display: flex; justify-content: center; gap: 8px;
   background: var(--bg); border-top: 1px solid #1c2742;
-  padding-bottom: max(2px, calc(env(safe-area-inset-bottom) - 30px));
+  /* --sab = latchat safe-area-bottom (växer bara) → ingen höjdglidning när iOS
+     avslöjar insetet efter cold launch. Fallback till live env innan latchning. */
+  padding-bottom: max(2px, calc(var(--sab, env(safe-area-inset-bottom)) - 30px));
 }
 /* Reservera barens höjd så inget innehåll göms bakom den (bara när baren syns) */
 body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
 .tab-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   background: none; border: none; color: var(--muted);
-  padding: 6px 16px 4px; font-size: 0.62rem; font-weight: 600; font-family: inherit; cursor: pointer;
+  /* mer luft mot avdelaren (top) + ikonerna lägre (mindre bottenpadding) */
+  padding: 13px 16px 2px; font-size: 0.62rem; font-weight: 600; font-family: inherit; cursor: pointer;
   letter-spacing: 0.02em;
 }
 .tab-btn svg { display: block; }

@@ -607,6 +607,25 @@ function updateTabbar() {
   }
 }
 
+// iOS rapporterar safe-area-insetet först EFTER cold launch (när hemindikatorn dyker
+// upp), vilket annars får layouten att hoppa. Latcha största sedda värdet i --sab så
+// att det bara växer (krymper aldrig vid resume) → ingen återkommande glidning.
+function latchSafeArea() {
+  const probe = document.createElement("div");
+  probe.style.cssText = "position:fixed;left:0;bottom:0;width:0;height:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none;";
+  document.body.appendChild(probe);
+  const v = probe.getBoundingClientRect().height;
+  probe.remove();
+  const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sab")) || 0;
+  if (v > 0 && v > cur) document.documentElement.style.setProperty("--sab", v + "px");
+}
+latchSafeArea();
+["resize", "orientationchange", "pageshow"].forEach((ev) =>
+  window.addEventListener(ev, () => { latchSafeArea(); updateTabbar(); }));
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") { latchSafeArea(); updateTabbar(); }
+});
+
 function renderCurrentScreen() {
   if (activeScreen === "subjects") renderSubjects();
   else if (activeScreen === "lessons") renderLessons();
@@ -3159,7 +3178,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v142";
+const APP_VERSION = "v143";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
