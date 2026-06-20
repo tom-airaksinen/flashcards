@@ -794,6 +794,7 @@ body {
   overflow: hidden;
   border-radius: 12px;
   margin-bottom: 8px;
+  background: var(--fail); /* röd bakgrund bakom raden → inget glapp om man drar förbi knappen */
 }
 .word-row-main {
   position: relative;

@@ -1740,8 +1740,17 @@ async function editCurrentCard() {
     lid = les && les.id;
   }
   if (!lid) return;
-  const res = await askWord(c.front, c.back, c.hint);
+  const res = await askWord(c.front, c.back, c.hint, true);
   if (!res) return;
+  if (res._delete) {
+    const ok = await confirmDanger("Ta bort ord?", `"${c.front}" tas bort.`);
+    if (!ok) return;
+    removeCard(currentSubject.id, lid, c.id);
+    session.queue = session.queue.filter((x) => x.id !== c.id); // ut ur passet direkt
+    undoStack = []; // det borttagna kortet ska inte gå att ångra tillbaka
+    loadCard(); // visa nästa (eller avsluta om kön är tom)
+    return;
+  }
   // bevara inlärningen: flytta SRS-lådorna från gamla ordnyckeln till den nya
   ["f2b", "b2f"].forEach((dir) => {
     const oldK = srsKey(c, dir);
@@ -2993,7 +3002,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v130";
+const APP_VERSION = "v131";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
