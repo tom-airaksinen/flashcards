@@ -987,6 +987,15 @@ function pickDir(dirMode) {
   return Math.random() < 0.5 ? "f2b" : "b2f";
 }
 
+// Fisher-Yates: blanda presentationsordningen i ett pass (efter att urvalet gjorts)
+function shuffleInPlace(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 async function startLessonSession(lessonId, force = false, continuing = false) {
   const lesson = currentSubject.lessons.find((l) => l.id === lessonId);
   if (!lesson) return;
@@ -1020,7 +1029,9 @@ async function startLessonSession(lessonId, force = false, continuing = false) {
     .sort((a, b) => a.box - b.box || a.r - b.r)
     .map((x) => x.c);
   const lim = sessionLimit();
-  const queue = lim ? ordered.slice(0, lim) : ordered;
+  // Urvalet sker svagast-först (ovan), men presentationsordningen blandas så nya
+  // och mognade kort slumpas in i passet i stället för att komma i fast ordning.
+  const queue = shuffleInPlace(lim ? ordered.slice(0, lim) : [...ordered]);
   queue.forEach((c) => runSeen.add(c.id)); // markera som sedda i rundan
   const note = lim && ordered.length > queue.length
     ? `Pass klart! 🎉 ${queue.length} av ${ordered.length} ord – resten kommer nästa pass.`
@@ -1049,7 +1060,9 @@ function startDueSession(continuing = false) {
   due.sort((a, b) => Math.min(getEntry(a, "f2b").due, getEntry(a, "b2f").due) -
     Math.min(getEntry(b, "f2b").due, getEntry(b, "b2f").due));
   const lim = sessionLimit();
-  const queue = lim ? due.slice(0, lim) : due;
+  // Urvalet sker mest-förfallet-först (ovan), men ordningen blandas så nya och
+  // mognade kort slumpas in i passet.
+  const queue = shuffleInPlace(lim ? due.slice(0, lim) : [...due]);
   queue.forEach((c) => runSeen.add(c.id)); // markera som sedda i rundan
   const note = lim && due.length > queue.length
     ? `Pass klart! 🎉 ${queue.length} av ${due.length} förfallna ord – resten kvar.`
@@ -3178,7 +3191,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v143";
+const APP_VERSION = "v144";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

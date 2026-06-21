@@ -459,12 +459,20 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
   border-radius: 8px;
   padding: 9px 6px;
   font-size: 0.84rem;
+  /* mjuk övertoning av den blå highlighten när man byter period */
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 .st-period button.on {
   background: var(--accent);
   color: #fff;
   font-weight: 600;
+  animation: seg-pop 0.22s ease; /* liten puls på den nyvalda → mer levande */
 }
+@media (prefers-reduced-motion: reduce) {
+  .st-period button { transition: none; }
+  .st-period button.on { animation: none; }
+}
+@keyframes seg-pop { 0% { transform: scale(0.92); } 55% { transform: scale(1.05); } 100% { transform: scale(1); } }
 .opt-sub { color: var(--muted); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; margin: 12px 2px 8px; }
 .opt-note { color: var(--muted); font-size: 0.72rem; margin: 8px 2px 0; line-height: 1.4; }
 
