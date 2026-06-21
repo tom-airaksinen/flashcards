@@ -455,13 +455,16 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
   margin: 10px 0 12px;
 }
 /* Den blå highlighten – ett enda element som glider i sidled till valt segment.
-   Vi animerar vänster- OCH högerkanten (left/right) med samma easing så båda
-   kanterna rör sig samtidigt (i stället för transform+width som snäpper ena kanten). */
+   Endast transform animeras (GPU, kan inte desynka → båda kanterna följs åt och
+   det blir inte ryckigt). Bredden sätts direkt (ingen width-transition) så den
+   aldrig "ballonar" – segmenten är lika breda så bredden ändras ändå inte. */
 .st-period-thumb {
-  position: absolute; top: 4px; bottom: 4px; left: 4px; right: 4px; z-index: 0;
+  position: absolute; top: 4px; bottom: 4px; left: 0; z-index: 0;
   border-radius: 8px; background: var(--accent);
-  transition: left 0.28s cubic-bezier(.4,0,.2,1), right 0.28s cubic-bezier(.4,0,.2,1);
+  transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+  will-change: transform;
 }
+@media (prefers-reduced-motion: reduce) { .st-period-thumb { transition: none; } }
 .st-period button {
   position: relative; z-index: 1; /* texten ovanpå thumben */
   background: transparent;
