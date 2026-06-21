@@ -617,7 +617,10 @@ function latchSafeArea() {
   const v = probe.getBoundingClientRect().height;
   probe.remove();
   const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sab")) || 0;
-  if (v > 0 && v > cur) document.documentElement.style.setProperty("--sab", v + "px");
+  // Klampa: hemindikatorns inset är ~34px; tillåt lite marginal men låt aldrig ett
+  // tillfälligt uppblåst värde fastna och ge för mycket luft i nederkant.
+  const capped = Math.min(v, 36);
+  if (capped > 0 && capped > cur) document.documentElement.style.setProperty("--sab", capped + "px");
 }
 latchSafeArea();
 ["resize", "orientationchange", "pageshow"].forEach((ev) =>
@@ -3207,7 +3210,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v147";
+const APP_VERSION = "v148";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

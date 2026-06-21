@@ -474,7 +474,10 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
   font-size: 0.84rem;
   transition: color 0.2s ease;
 }
-.st-period button.on { color: #fff; font-weight: 600; }
+/* OBS: background måste nollställas här – annars ärvs blå bakgrund från
+   .opt-segs button.on (samma specificitet) och ligger kvar OVANPÅ thumben →
+   dubbel-blått som ser avlångt ut vid byte. Bara thumben ska vara blå. */
+.st-period button.on { background: transparent; color: #fff; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) {
   .st-period-thumb { transition: none; }
 }
