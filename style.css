@@ -446,6 +446,7 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
    bakgrund som skiljer sig från KPI-korten). Scopas till .st-period så lektions-
    skärmens .opt-segs-väljare inte påverkas. */
 .st-period {
+  position: relative; /* positioneringskontext för glidande thumb */
   gap: 4px;
   background: #0a1020;
   border: 1px solid #1c2742;
@@ -453,26 +454,25 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
   padding: 4px;
   margin: 10px 0 12px;
 }
+/* Den blå highlighten – ett enda element som glider i sidled till valt segment */
+.st-period-thumb {
+  position: absolute; top: 0; left: 0; z-index: 0;
+  border-radius: 8px; background: var(--accent);
+  transition: transform 0.25s cubic-bezier(.4,0,.2,1), width 0.25s cubic-bezier(.4,0,.2,1), height 0.25s ease;
+}
 .st-period button {
+  position: relative; z-index: 1; /* texten ovanpå thumben */
   background: transparent;
   color: var(--muted);
   border-radius: 8px;
   padding: 9px 6px;
   font-size: 0.84rem;
-  /* mjuk övertoning av den blå highlighten när man byter period */
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: color 0.2s ease;
 }
-.st-period button.on {
-  background: var(--accent);
-  color: #fff;
-  font-weight: 600;
-  animation: seg-pop 0.22s ease; /* liten puls på den nyvalda → mer levande */
-}
+.st-period button.on { color: #fff; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) {
-  .st-period button { transition: none; }
-  .st-period button.on { animation: none; }
+  .st-period-thumb { transition: none; }
 }
-@keyframes seg-pop { 0% { transform: scale(0.92); } 55% { transform: scale(1.05); } 100% { transform: scale(1); } }
 .opt-sub { color: var(--muted); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; margin: 12px 2px 8px; }
 .opt-note { color: var(--muted); font-size: 0.72rem; margin: 8px 2px 0; line-height: 1.4; }
 

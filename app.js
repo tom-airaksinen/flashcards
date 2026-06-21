@@ -1230,7 +1230,7 @@ function renderStats() {
 
   body.innerHTML = `
     <div class="st-hero"><div class="st-big">${cur}<span class="st-u"> dagar</span></div><div class="st-cap">🔥 nuvarande streak · längsta ${longest}</div></div>
-    <div class="opt-segs st-period" id="st-period">${PERIODS.map((p) => `<button type="button" data-v="${p.v}">${p.label}</button>`).join("")}</div>
+    <div class="opt-segs st-period" id="st-period"><span class="st-period-thumb" id="st-period-thumb"></span>${PERIODS.map((p) => `<button type="button" data-v="${p.v}">${p.label}</button>`).join("")}</div>
     <div class="st-grid" id="st-grid"></div>
     <div class="st-sec">SENASTE 18 VECKORNA</div>
     <div class="st-heatwrap"><div class="st-heat">${heat}</div></div>
@@ -1240,8 +1240,21 @@ function renderStats() {
 
   const segs = body.querySelector("#st-period");
   const grid = body.querySelector("#st-grid");
+  const thumb = body.querySelector("#st-period-thumb");
+  let thumbInit = false;
+  // Flytta den blå highlighten (thumb) till valt segment – glider i sidled
+  const moveThumb = () => {
+    const on = segs.querySelector("button.on");
+    if (!on) return;
+    if (!thumbInit) thumb.style.transition = "none"; // ingen glidning vid första render
+    thumb.style.width = on.offsetWidth + "px";
+    thumb.style.height = on.offsetHeight + "px";
+    thumb.style.transform = `translate(${on.offsetLeft}px, ${on.offsetTop}px)`;
+    if (!thumbInit) { void thumb.offsetWidth; thumb.style.transition = ""; thumbInit = true; }
+  };
   const renderKpis = () => {
     segs.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === period));
+    moveThumb();
     const k = periodKpis(period);
     grid.innerHTML = `
       <div class="st-b"><div class="st-v">${k.pass}</div><div class="st-l">PASS</div></div>
@@ -3191,7 +3204,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v144";
+const APP_VERSION = "v145";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
