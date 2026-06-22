@@ -370,7 +370,8 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
 .st-b .st-v { font-size: 1.25rem; font-weight: 700; }
 .st-b .st-l { color: var(--muted); font-size: 0.62rem; margin-top: 3px; letter-spacing: 0.03em; }
 .st-sec { color: var(--muted); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em; margin: 18px 2px 6px; }
-.st-heatwrap { overflow-x: auto; padding-bottom: 4px; }
+/* Lite utrymme runt om så dagens 2px-ring (box-shadow) inte klipps av behållaren */
+.st-heatwrap { overflow-x: auto; padding: 3px 3px 4px; }
 .st-heat { display: flex; gap: 4px; width: max-content; }
 .st-wk { display: flex; flex-direction: column; gap: 4px; }
 .st-d { width: 14px; height: 14px; border-radius: 4px; background: var(--surface-2); }
