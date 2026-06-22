@@ -2057,20 +2057,25 @@ function openModal(innerHTML) {
 function enableSheetDismiss(modal) {
   const backdrop = modalRoot.querySelector(".modal-backdrop");
   let startY = 0, startScroll = 0, dy = 0, mode = null; // null | "maybe" | "drag"
+  let lastY = 0, lastT = 0, vy = 0; // flick-hastighet (px/ms, positiv = nedåt)
   modal.addEventListener("pointerdown", (e) => {
     if (e.button != null && e.button > 0) return;
     startY = e.clientY; startScroll = modal.scrollTop; dy = 0; mode = "maybe";
+    lastY = e.clientY; lastT = performance.now(); vy = 0;
   });
   modal.addEventListener("pointermove", (e) => {
     if (mode === null) return;
     const d = e.clientY - startY;
     if (mode === "maybe") {
-      if (Math.abs(d) < 6) return;
-      // Bara om vi är i toppen och drar TYDLIGT nedåt → annars låt scroll ske
-      if (d > 0 && startScroll <= 0) { mode = "drag"; modal.style.transition = "none"; try { modal.setPointerCapture(e.pointerId); } catch (_) {} }
+      if (Math.abs(d) < 5) return;
+      // Bara om vi är i toppen och drar nedåt → annars låt scroll ske
+      if (d > 0 && startScroll <= 1) { mode = "drag"; modal.style.transition = "none"; try { modal.setPointerCapture(e.pointerId); } catch (_) {} }
       else { mode = null; return; }
     }
     e.preventDefault();
+    const now = performance.now();
+    if (now > lastT) vy = (e.clientY - lastY) / (now - lastT);
+    lastY = e.clientY; lastT = now;
     dy = Math.max(0, d);
     modal.style.transform = `translateY(${dy}px)`;
     if (backdrop) backdrop.style.opacity = String(Math.max(0, 1 - dy / 450));
@@ -2078,7 +2083,8 @@ function enableSheetDismiss(modal) {
   const end = () => {
     if (mode !== "drag") { mode = null; return; }
     mode = null;
-    if (dy > 110) {
+    // Stäng vid kort drag (>55px) ELLER snabb knyck nedåt (flick), annars snäpp tillbaka
+    if (dy > 55 || vy > 0.45) {
       modal.style.transition = "transform 0.2s ease-in";
       modal.style.transform = "translateY(110%)";
       if (backdrop) { backdrop.style.transition = "opacity 0.2s"; backdrop.style.opacity = "0"; }
@@ -3259,7 +3265,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v153";
+const APP_VERSION = "v154";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
