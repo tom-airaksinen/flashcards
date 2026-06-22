@@ -1392,7 +1392,12 @@ function finishSession() {
       ? (remaining === 1 ? "Ta det sista direkt" : `Ta de sista ${remaining} direkt`)
       : `Fortsätt med ${cont.limit} till`;
     contBtn.classList.remove("hidden");
-    contBtn.onclick = () => (cont.kind === "due" ? startDueSession(true) : startLessonSession(cont.lessonId, cont.forced, true));
+    contBtn.onclick = () => {
+      if (cont.kind === "due") startDueSession(true); else startLessonSession(cont.lessonId, cont.forced, true);
+      // Var passet i handsfree → fortsätt i handsfree (mic redan beviljad → ingen await,
+      // kvar i klick-gesten). startHandsfree läser upp kortet och börjar lyssna igen.
+      if (wasHF && session && session.current) startHandsfree();
+    };
   } else {
     contBtn.classList.add("hidden");
   }
@@ -3210,7 +3215,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v149";
+const APP_VERSION = "v150";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
