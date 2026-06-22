@@ -1013,7 +1013,14 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
   gap: 12px;
   max-height: 85dvh;
   overflow-y: auto;
+  overscroll-behavior: contain; /* hindrar att svep-ner studsar hela sidan */
   animation: slideup 0.22s ease-out;
+}
+/* Drag-handtag som signalerar att arket kan svepas ner för att stängas */
+.sheet-grip {
+  width: 40px; height: 4px; border-radius: 2px;
+  background: rgba(255,255,255,0.22);
+  margin: -6px auto 2px; flex-shrink: 0;
 }
 /* Barnen ska behålla sin höjd – annars krymper flex dem (t.ex. heatmapen) när
    innehållet är högre än modalen. Modalen scrollar i stället. */

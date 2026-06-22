@@ -1807,6 +1807,7 @@ function openExplore(term) {
   const lang = wikiLang();
   const initial = stripArticle(term, lang); // sök på grundordet (utan artikel)
   const m = openModal(`
+    <div class="sheet-grip" aria-hidden="true"></div>
     <div class="modal-head"><h3>Utforska</h3></div>
     <div class="xpl-search">
       <input type="text" id="xpl-q" value="${esc(initial)}" autocomplete="off" autocapitalize="none" autocorrect="off" />
@@ -1820,6 +1821,7 @@ function openExplore(term) {
     <button class="xpl-google" id="xpl-google">🔎 Öppna på Google</button>
     <div class="modal-actions"><button class="btn-primary" id="m-ok">Stäng</button></div>`);
   m.querySelector("#m-ok").onclick = closeModal;
+  enableSheetDismiss(m); // svep ner kraftigt (från toppen) för att stänga
 
   const meaningEl = m.querySelector("#xpl-meaning");
   const imgsEl = m.querySelector("#xpl-imgs");
@@ -2048,6 +2050,47 @@ function openModal(innerHTML) {
   modalRoot.classList.remove("hidden");
   modalRoot.querySelector(".modal-backdrop").addEventListener("click", closeModal);
   return modalRoot.querySelector(".modal");
+}
+
+// Svep-ner-för-att-stänga på en sheet-modal. Aktiveras bara när man är högst upp
+// i scrollen och drar nedåt → krockar inte med vanlig scrollning av innehållet.
+function enableSheetDismiss(modal) {
+  const backdrop = modalRoot.querySelector(".modal-backdrop");
+  let startY = 0, startScroll = 0, dy = 0, mode = null; // null | "maybe" | "drag"
+  modal.addEventListener("pointerdown", (e) => {
+    if (e.button != null && e.button > 0) return;
+    startY = e.clientY; startScroll = modal.scrollTop; dy = 0; mode = "maybe";
+  });
+  modal.addEventListener("pointermove", (e) => {
+    if (mode === null) return;
+    const d = e.clientY - startY;
+    if (mode === "maybe") {
+      if (Math.abs(d) < 6) return;
+      // Bara om vi är i toppen och drar TYDLIGT nedåt → annars låt scroll ske
+      if (d > 0 && startScroll <= 0) { mode = "drag"; modal.style.transition = "none"; try { modal.setPointerCapture(e.pointerId); } catch (_) {} }
+      else { mode = null; return; }
+    }
+    e.preventDefault();
+    dy = Math.max(0, d);
+    modal.style.transform = `translateY(${dy}px)`;
+    if (backdrop) backdrop.style.opacity = String(Math.max(0, 1 - dy / 450));
+  }, { passive: false });
+  const end = () => {
+    if (mode !== "drag") { mode = null; return; }
+    mode = null;
+    if (dy > 110) {
+      modal.style.transition = "transform 0.2s ease-in";
+      modal.style.transform = "translateY(110%)";
+      if (backdrop) { backdrop.style.transition = "opacity 0.2s"; backdrop.style.opacity = "0"; }
+      setTimeout(closeModal, 190);
+    } else {
+      modal.style.transition = "transform 0.22s ease";
+      modal.style.transform = "translateY(0)";
+      if (backdrop) { backdrop.style.transition = "opacity 0.2s"; backdrop.style.opacity = ""; }
+    }
+  };
+  modal.addEventListener("pointerup", end);
+  modal.addEventListener("pointercancel", end);
 }
 
 // Egen dropdown som matchar appens tema (ersätter native <select>).
@@ -3216,7 +3259,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v152";
+const APP_VERSION = "v153";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
