@@ -238,8 +238,10 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
   box-shadow: 0 10px 28px rgba(0,0,0,0.55);
   opacity: 0.97;
 }
-.row-title { font-size: 1.05rem; font-weight: 600; }
-.row-meta { color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
+/* Titeln är det flexibla elementet och trunkeras (…) så taggar + pil-knapp
+   (flex:none) alltid ryms och pilen aldrig trycks utanför skärmen. */
+.row-title { font-size: 1.05rem; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-meta { color: var(--muted); font-size: 0.85rem; white-space: nowrap; flex: none; }
 .due-tag {
   background: var(--easy);
   color: #0d1426;
