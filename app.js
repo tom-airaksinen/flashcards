@@ -1376,9 +1376,10 @@ function finishSession() {
   if (currentSubject) {
     const gp = getUnitProgress(currentSubject.id);
     const dayDone = gp.dayCount >= DAILY_GOAL, weekDone = gp.weekCount >= WEEKLY_GOAL;
+    // Visa alltid faktiska antalet unika kort; ✓ när målet nåtts, annars "/mål".
     goalsEl.innerHTML =
-      `<div class="cg-goal ${dayDone ? "done" : ""}">💪 ${dayDone ? `${DAILY_GOAL} olika kort idag! ✓` : `${gp.dayCount} / ${DAILY_GOAL} olika kort idag`}</div>` +
-      `<div class="cg-goal ${weekDone ? "done" : ""}">🏆 ${weekDone ? `${WEEKLY_GOAL} kort denna vecka! ✓` : `${gp.weekCount} / ${WEEKLY_GOAL} kort denna vecka`}</div>`;
+      `<div class="cg-goal ${dayDone ? "done" : ""}">💪 ${dayDone ? `${gp.dayCount} olika kort idag! ✓` : `${gp.dayCount} / ${DAILY_GOAL} olika kort idag`}</div>` +
+      `<div class="cg-goal ${weekDone ? "done" : ""}">🏆 ${weekDone ? `${gp.weekCount} kort denna vecka! ✓` : `${gp.weekCount} / ${WEEKLY_GOAL} kort denna vecka`}</div>`;
   } else {
     goalsEl.innerHTML = "";
   }
@@ -3215,7 +3216,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v150";
+const APP_VERSION = "v151";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
