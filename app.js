@@ -1368,18 +1368,27 @@ function finishSession() {
   commitSessionStats(); // logga passet innan vi släpper session-objektet
   stopHandsfree();
   const cont = session ? { limit: session.continueLimit, kind: session.kind, lessonId: session.lessonId, forced: session.forced } : null;
-  $("congrats-sub").textContent = (session && session.note) || `${session ? session.label : ""} – klar! 🎉`;
-  $("congrats-done").textContent = DONE_LABELS[Math.floor(Math.random() * DONE_LABELS.length)];
 
-  // Flipp-mål för aktuellt ämne: dagens + veckans distinkta ord
+  // Ring-rubrik = slumpad pepp (gröna knappen är alltid "Klar"). Ringen fylls efter
+  // andel av passets/dagens kort som klarats: gjorda kort / (gjorda + kvar).
+  const passCount = session ? (session.total || (session.cardSet ? session.cardSet.size : 0)) : 0;
+  const remaining = cont && cont.limit > 0 ? remainingForContinue(cont) : 0;
+  const total = passCount + remaining;
+  $("congrats-pep").textContent = DONE_LABELS[Math.floor(Math.random() * DONE_LABELS.length)];
+  $("congrats-frac").textContent = total ? `${passCount} / ${total} kort` : "";
+
+  // Mål-kort visas BARA när dagens (eller veckans) mål nåtts – då visas båda som sporre.
   const goalsEl = $("congrats-goals");
   if (currentSubject) {
     const gp = getUnitProgress(currentSubject.id);
     const dayDone = gp.dayCount >= DAILY_GOAL, weekDone = gp.weekCount >= WEEKLY_GOAL;
-    // Visa alltid faktiska antalet unika kort; ✓ när målet nåtts, annars "/mål".
-    goalsEl.innerHTML =
-      `<div class="cg-goal ${dayDone ? "done" : ""}">💪 ${dayDone ? `${gp.dayCount} olika kort idag! ✓` : `${gp.dayCount} / ${DAILY_GOAL} olika kort idag`}</div>` +
-      `<div class="cg-goal ${weekDone ? "done" : ""}">🏆 ${weekDone ? `${gp.weekCount} kort denna vecka! ✓` : `${gp.weekCount} / ${WEEKLY_GOAL} kort denna vecka`}</div>`;
+    if (dayDone || weekDone) {
+      goalsEl.innerHTML =
+        `<div class="cg-goal ${dayDone ? "done" : ""}"><div class="cg-ico">💪</div><div class="cg-num">${dayDone ? `${gp.dayCount} ✓` : `${gp.dayCount} / ${DAILY_GOAL}`}</div><div class="cg-lbl">kort idag</div></div>` +
+        `<div class="cg-goal ${weekDone ? "done" : ""}"><div class="cg-ico">🏆</div><div class="cg-num">${weekDone ? `${gp.weekCount} ✓` : `${gp.weekCount} / ${WEEKLY_GOAL}`}</div><div class="cg-lbl">denna vecka</div></div>`;
+    } else {
+      goalsEl.innerHTML = "";
+    }
   } else {
     goalsEl.innerHTML = "";
   }
@@ -1387,7 +1396,6 @@ function finishSession() {
   // "Fortsätt"-knapp om man kör i pass och det finns mer kvar. Texten anpassas:
   // färre kvar än passlängden → "Ta de sista X direkt".
   const contBtn = $("congrats-continue");
-  const remaining = cont && cont.limit > 0 ? remainingForContinue(cont) : 0;
   if (remaining > 0) {
     contBtn.textContent = remaining < cont.limit
       ? (remaining === 1 ? "Ta det sista direkt" : `Ta de sista ${remaining} direkt`)
@@ -1422,6 +1430,16 @@ function finishSession() {
   show("congrats");
   activeScreen = "congrats";
   launchConfetti();
+  // Fyll progressringen (animeras från tom via CSS-transition på stroke-dashoffset)
+  const ringFill = $("cg-ring-fill");
+  if (ringFill) {
+    const frac = total > 0 ? Math.min(1, passCount / total) : 1;
+    const C = 578; // omkrets ≈ 2π·92
+    ringFill.style.strokeDashoffset = String(C);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      ringFill.style.strokeDashoffset = String(Math.round(C * (1 - frac)));
+    }));
+  }
   if (wasHF) startCongratsListen(); // lyssna efter "ångra" i röstläge
 }
 
@@ -3265,7 +3283,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v154";
+const APP_VERSION = "v155";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
