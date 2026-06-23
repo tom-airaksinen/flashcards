@@ -1374,7 +1374,11 @@ function finishSession() {
   const passCount = session ? (session.total || (session.cardSet ? session.cardSet.size : 0)) : 0;
   const remaining = cont && cont.limit > 0 ? remainingForContinue(cont) : 0;
   const total = passCount + remaining;
-  $("congrats-pep").textContent = DONE_LABELS[Math.floor(Math.random() * DONE_LABELS.length)];
+  const pepEl = $("congrats-pep");
+  const pep = DONE_LABELS[Math.floor(Math.random() * DONE_LABELS.length)];
+  pepEl.textContent = pep;
+  // Skala fonten efter längd så peppen alltid ryms innanför ringen (nuddar inte arcen)
+  pepEl.style.fontSize = pep.length > 12 ? "1.3rem" : pep.length > 8 ? "1.55rem" : "1.8rem";
   $("congrats-frac").textContent = total ? `${passCount} / ${total} kort` : "";
 
   // Mål-kort visas BARA när dagens (eller veckans) mål nåtts – då visas båda som sporre.
@@ -1427,6 +1431,7 @@ function finishSession() {
     undoHint.classList.add("hidden");
   }
 
+  buildStaticConfetti(); // statisk bakgrundskonfetti (byggs en gång, stannar kvar)
   show("congrats");
   activeScreen = "congrats";
   launchConfetti();
@@ -1500,6 +1505,23 @@ function stopCongratsListen() {
   congratsListening = false;
   clearTimeout(congratsListenTimer);
   if (congratsRec) { try { congratsRec.abort(); } catch (_) {} congratsRec = null; }
+}
+
+// Statisk bakgrundskonfetti – byggs en gång och stannar kvar (mest i övre halvan
+// så den ramar in 🎉 + ringen). Ger bestående festkänsla efter att regnet lagt sig.
+function buildStaticConfetti() {
+  const el = $("cg-deco");
+  if (!el || el.childElementCount) return;
+  const cols = ["#5b8cff", "#8fbf5a", "#ffd24a", "#ff8a3d", "#e05a4f", "#b06bf0", "#fff"];
+  for (let i = 0; i < 26; i++) {
+    const s = document.createElement("i");
+    s.style.left = (Math.random() * 100) + "%";
+    s.style.top = (Math.random() * 52) + "%";
+    s.style.background = cols[i % cols.length];
+    s.style.transform = `rotate(${Math.round(Math.random() * 360)}deg)`;
+    s.style.opacity = (0.4 + Math.random() * 0.45).toFixed(2);
+    el.appendChild(s);
+  }
 }
 
 function launchConfetti() {
@@ -3283,7 +3305,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v155";
+const APP_VERSION = "v156";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
