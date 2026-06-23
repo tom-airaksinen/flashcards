@@ -1469,7 +1469,6 @@ function finishSession() {
     undoHint.classList.add("hidden");
   }
 
-  buildStaticConfetti(); // statisk bakgrundskonfetti (byggs en gång, stannar kvar)
   show("congrats");
   activeScreen = "congrats";
   launchConfetti();
@@ -1543,23 +1542,6 @@ function stopCongratsListen() {
   congratsListening = false;
   clearTimeout(congratsListenTimer);
   if (congratsRec) { try { congratsRec.abort(); } catch (_) {} congratsRec = null; }
-}
-
-// Statisk bakgrundskonfetti – byggs en gång och stannar kvar (mest i övre halvan
-// så den ramar in 🎉 + ringen). Ger bestående festkänsla efter att regnet lagt sig.
-function buildStaticConfetti() {
-  const el = $("cg-deco");
-  if (!el || el.childElementCount) return;
-  const cols = ["#5b8cff", "#8fbf5a", "#ffd24a", "#ff8a3d", "#e05a4f", "#b06bf0", "#fff"];
-  for (let i = 0; i < 26; i++) {
-    const s = document.createElement("i");
-    s.style.left = (Math.random() * 100) + "%";
-    s.style.top = (Math.random() * 52) + "%";
-    s.style.background = cols[i % cols.length];
-    s.style.transform = `rotate(${Math.round(Math.random() * 360)}deg)`;
-    s.style.opacity = (0.4 + Math.random() * 0.45).toFixed(2);
-    el.appendChild(s);
-  }
 }
 
 // Fysik-konfetti på canvas: faller med gravitation, studsar mot ringen (solid
@@ -3398,7 +3380,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v158";
+const APP_VERSION = "v159";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
