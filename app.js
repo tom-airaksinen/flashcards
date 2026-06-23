@@ -1524,27 +1524,79 @@ function buildStaticConfetti() {
   }
 }
 
+// Fysik-konfetti på canvas: faller med gravitation, studsar mot ringen (solid
+// cirkel) och mot skärmens sidokanter, en del landar och blir liggande på Klar-
+// knappen, resten faller ut i botten och försvinner.
+let cgRaf = null;
 function launchConfetti() {
-  const colors = ["#5b8cff", "#5bbf72", "#f4c542", "#e05a4f", "#b06bf0", "#ff8fab"];
-  const host = $("congrats-screen"); // ligger inuti skärmen (absolut), inte fixed på body
-  host.querySelectorAll(".confetti-root").forEach((el) => el.remove());
-  const root = document.createElement("div");
-  root.className = "confetti-root";
-  for (let i = 0; i < 60; i++) {
-    const p = document.createElement("i");
-    const size = 6 + Math.random() * 8;
-    p.style.cssText =
-      `left:${Math.random() * 100}%;` +
-      `width:${size}px; height:${size * 0.6}px;` +
-      `background:${colors[i % colors.length]};` +
-      `animation-duration:${1.6 + Math.random() * 1.6}s;` +
-      `animation-delay:${Math.random() * 0.4}s;` +
-      `--drift:${(Math.random() * 2 - 1) * 140}px;` +
-      `--spin:${(Math.random() * 4 + 2) * 360}deg;`;
-    root.appendChild(p);
+  const screen = $("congrats-screen");
+  const canvas = $("cg-physics");
+  if (!canvas) return;
+  cancelAnimationFrame(cgRaf);
+  const ctx = canvas.getContext("2d");
+  const W = screen.clientWidth, H = screen.clientHeight;
+  if (prefersReducedMotion) { canvas.width = W; canvas.height = H; ctx.clearRect(0, 0, W, H); return; }
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.width = W + "px"; canvas.style.height = H + "px";
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // Geometri relativt skärmen (transform-säkert under nav-glid: båda rects flyttas lika)
+  const sr = screen.getBoundingClientRect();
+  const ringEl = screen.querySelector(".cg-ring");
+  const btnEl = $("congrats-done");
+  const rr = ringEl.getBoundingClientRect();
+  const cx = rr.left - sr.left + rr.width / 2;
+  const cy = rr.top - sr.top + rr.height / 2;
+  const R = ringEl.offsetWidth / 2 - 6; // offsetWidth = olayoutad bredd (struntar i pop-skala)
+  const bb = btnEl.getBoundingClientRect();
+  const btn = { top: bb.top - sr.top, left: bb.left - sr.left, right: bb.right - sr.left };
+
+  const COLS = ["#5b8cff", "#8fbf5a", "#ffd24a", "#ff8a3d", "#e05a4f", "#b06bf0", "#fff"];
+  const rp = (a, b) => a + Math.random() * (b - a);
+  let parts = [];
+  for (let i = 0; i < 80; i++) {
+    parts.push({ x: rp(8, W - 8), y: -rp(10, 180), vx: rp(-1.3, 1.3), vy: rp(0.4, 1.8),
+      w: rp(6, 11), h: rp(5, 9), rot: rp(0, 6.28), vr: rp(-0.25, 0.25),
+      col: COLS[i % COLS.length], rest: false, dead: false });
   }
-  host.appendChild(root);
-  setTimeout(() => root.remove(), 4000);
+  const G = 0.17, REST = 0.55, AIR = 0.994, M = 5;
+  let frames = 0;
+  function step() {
+    frames++;
+    ctx.clearRect(0, 0, W, H);
+    let moving = 0;
+    for (const p of parts) {
+      if (!p.rest) {
+        p.vy += G; p.vx *= AIR; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+        const dx = p.x - cx, dy = p.y - cy, d = Math.hypot(dx, dy);
+        // Studs mot ringen – men bara om biten har fart. Nästan stillastående bitar
+        // får falla igenom och ut i botten i stället för att klänga kvar på kanten.
+        if (d < R && d > 0.01 && (Math.abs(p.vx) + Math.abs(p.vy)) > 0.5) {
+          const nx = dx / d, ny = dy / d;
+          p.x = cx + nx * R; p.y = cy + ny * R;
+          const vn = p.vx * nx + p.vy * ny;
+          p.vx = (p.vx - 2 * vn * nx) * REST; p.vy = (p.vy - 2 * vn * ny) * REST;
+          p.vr += rp(-0.2, 0.2);
+        }
+        if (p.x < M) { p.x = M; p.vx = Math.abs(p.vx) * REST; }          // sidokanter
+        else if (p.x > W - M) { p.x = W - M; p.vx = -Math.abs(p.vx) * REST; }
+        if (p.vy > 0 && p.x > btn.left - 3 && p.x < btn.right + 3 && (p.y + p.h / 2) >= btn.top && p.y < btn.top + 16) {
+          p.y = btn.top - p.h / 2; p.vy = -p.vy * 0.28; p.vx *= 0.55;     // landa på Klar-knappen
+          if (Math.abs(p.vy) < 0.7) { p.vy = 0; p.vx *= 0.4; if (Math.abs(p.vx) < 0.25) { p.rest = true; p.y = btn.top - p.h / 2; } }
+        }
+        if (p.y - 12 > H) p.dead = true; // ut i botten
+        if (!p.dead) moving++;
+      }
+      if (!p.dead) {
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.col;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+      }
+    }
+    parts = parts.filter((p) => !p.dead);
+    if (parts.length && moving > 0 && frames < 900) cgRaf = requestAnimationFrame(step);
+  }
+  step();
 }
 
 function answer(grade) {
@@ -3305,7 +3357,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v156";
+const APP_VERSION = "v157";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

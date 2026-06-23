@@ -850,6 +850,8 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
    regnande konfettin lagt sig */
 .cg-deco { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .cg-deco i { position: absolute; width: 9px; height: 9px; border-radius: 2px; }
+/* Canvas för fysik-konfettin (studsar mot ring + sidor, faller ut i botten) */
+.cg-physics { position: absolute; inset: 0; z-index: 400; pointer-events: none; }
 .cg-party { font-size: 2.8rem; line-height: 1; z-index: 1; margin-bottom: -4px; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.4)); animation: congrats-pop 0.45s ease-out; }
 
 /* Progress-ring */
