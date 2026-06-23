@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Konfetti – fysik (studsar på ringen)</title>
+<style>
+  :root{ --bg:#0d1426; --surface:#16203a; --surface-2:#1f2c4d; --text:#eaf0fb; --muted:#9aa3b2; --accent:#5b8cff; --easy:#8fbf5a; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#070b16;color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:24px 16px 60px}
+  h1{font-size:1.3rem;margin:0 0 4px}
+  .lede{color:var(--muted);font-size:.9rem;margin:0 0 18px;line-height:1.5;max-width:640px}
+  .replay{appearance:none;border:none;background:var(--accent);color:#fff;font:inherit;font-weight:700;
+    padding:10px 16px;border-radius:10px;cursor:pointer;margin-bottom:24px}
+  .phone{position:relative;width:330px;height:560px;border-radius:30px;overflow:hidden;background:var(--bg);
+    border:1px solid #1c2742;box-shadow:0 12px 34px rgba(0,0,0,.45);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+  .party{font-size:2.6rem;margin-bottom:-2px;z-index:1;filter:drop-shadow(0 3px 8px rgba(0,0,0,.4))}
+  .ring{position:relative;width:188px;height:188px;z-index:1}
+  .ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ring-center .pep{font-size:1.7rem;font-weight:900}
+  .ring-center .sub{color:var(--muted);font-size:.68rem;letter-spacing:.09em;text-transform:uppercase;margin-top:5px}
+  .frac{color:var(--muted);font-size:.8rem;margin-top:14px;z-index:1}
+  .klar{margin-top:18px;background:var(--easy);color:#0d1426;border:none;border-radius:13px;
+    padding:14px 0;width:210px;font-weight:700;font-family:inherit;font-size:1rem;z-index:1}
+  canvas.physics{position:absolute;inset:0;z-index:5;pointer-events:none}
+  .cap{margin:12px 2px 0;max-width:330px}
+  .cap span{color:var(--muted);font-size:.84rem;line-height:1.5}
+</style>
+</head>
+<body>
+<h1>🎉 Konfetti med fysik – studsar på ringen</h1>
+<p class="lede">Hedvigs idé: konfettin faller, <b>studsar mot ringen</b> och deflekteras bort, och en del landar och blir liggande <b>ovanpå Klar-knappen</b>. Riktig partikelsimulering (gravitation + cirkel-kollision). Tryck Spela upp.</p>
+<button class="replay" onclick="run()">▶ Spela upp</button>
+
+<div class="phone" id="phone">
+  <canvas class="physics"></canvas>
+  <div class="party">🎉</div>
+  <div class="ring">
+    <svg viewBox="0 0 188 188" width="188" height="188">
+      <circle cx="94" cy="94" r="80" fill="none" stroke="#1f2c4d" stroke-width="13"/>
+      <circle cx="94" cy="94" r="80" fill="none" stroke="#8fbf5a" stroke-width="13" stroke-linecap="round"
+        stroke-dasharray="503" stroke-dashoffset="95" transform="rotate(-90 94 94)"/>
+    </svg>
+    <div class="ring-center"><div class="pep">Grymt!</div><div class="sub">Passet klart</div></div>
+  </div>
+  <div class="frac">38 / 42 kort</div>
+  <button class="klar">Klar</button>
+</div>
+<div class="cap"><span>Konfettin studsar på ringen (behandlas som en solid cirkel), deflekteras åt sidorna, och bitar som hamnar på Klar-knappen lägger sig och blir kvar. Övriga faller förbi.</span></div>
+
+<script>
+const COLS=['#5b8cff','#8fbf5a','#ffd24a','#ff8a3d','#e05a4f','#b06bf0','#fff'];
+const rnd=(a,b)=>a+Math.random()*(b-a);
+let rafId=null;
+
+function run(){
+  const phone=document.getElementById('phone');
+  const canvas=phone.querySelector('canvas.physics');
+  const dpr=Math.min(2, window.devicePixelRatio||1);
+  const W=phone.clientWidth, H=phone.clientHeight;
+  canvas.width=W*dpr; canvas.height=H*dpr; canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+
+  const pr=phone.getBoundingClientRect();
+  const rr=phone.querySelector('.ring').getBoundingClientRect();
+  const br=phone.querySelector('.klar').getBoundingClientRect();
+  const cx=rr.left-pr.left+rr.width/2, cy=rr.top-pr.top+rr.height/2;
+  const R=rr.width/2 - 2;                 // ringen som solid cirkel
+  const btn={top:br.top-pr.top, left:br.left-pr.left, right:br.right-pr.left};
+
+  let parts=[];
+  for(let i=0;i<80;i++){
+    parts.push({ x:rnd(8,W-8), y:-rnd(10,160), vx:rnd(-1.3,1.3), vy:rnd(0.4,1.8),
+      w:rnd(6,11), h:rnd(5,9), rot:rnd(0,6.28), vr:rnd(-0.25,0.25),
+      col:COLS[i%COLS.length], rest:false, dead:false });
+  }
+  const G=0.17, REST=0.55, AIR=0.994, FLOOR=H+14;
+  let frames=0;
+
+  function step(){
+    frames++;
+    ctx.clearRect(0,0,W,H);
+    let moving=0;
+    for(const p of parts){
+      if(!p.rest){
+        p.vy+=G; p.vx*=AIR; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr;
+        // studs mot ringen (solid cirkel)
+        const dx=p.x-cx, dy=p.y-cy, d=Math.hypot(dx,dy);
+        if(d<R && d>0.01){
+          const nx=dx/d, ny=dy/d;
+          p.x=cx+nx*R; p.y=cy+ny*R;
+          const vn=p.vx*nx+p.vy*ny;
+          p.vx=(p.vx-2*vn*nx)*REST; p.vy=(p.vy-2*vn*ny)*REST;
+          p.vr+=rnd(-0.2,0.2);
+        }
+        // landa ovanpå Klar-knappen
+        if(p.vy>0 && p.x>btn.left-3 && p.x<btn.right+3 && (p.y+p.h/2)>=btn.top && p.y<btn.top+16){
+          p.y=btn.top-p.h/2; p.vy=-p.vy*0.28; p.vx*=0.55;
+          if(Math.abs(p.vy)<0.7){ p.vy=0; p.vx*=0.4; if(Math.abs(p.vx)<0.25){ p.rest=true; p.y=btn.top-p.h/2; } }
+        }
+        if(p.y-12>FLOOR) p.dead=true;
+        if(!p.dead) moving++;
+      }
+      if(!p.dead){
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle=p.col;
+        ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore();
+      }
+    }
+    parts=parts.filter(p=>!p.dead);
+    if(parts.length && (moving>0 && frames<900)) rafId=requestAnimationFrame(step);
+  }
+  cancelAnimationFrame(rafId); step();
+}
+window.addEventListener('load', ()=>setTimeout(run,300));
+</script>
+</body>
+</html>
