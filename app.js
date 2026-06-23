@@ -1248,6 +1248,7 @@ function renderStats() {
     const d = fsMap[k]; if (d) firstDates.push(d);
   })));
   const ltMax = Math.max(1, ...ltCounts);
+  const ltTotal = ltCounts.reduce((a, b) => a + b, 0);
   const LT_LABELS = ["Ny", "1d", "2d", "4d", "8d", "16d", "32d"];
   const leitner = ltCounts.map((n, i) =>
     `<div class="lt-col"><div class="lt-num">${n || ""}</div><div class="lt-bar b${i}" style="height:${n ? Math.max(6, Math.round(n / ltMax * 100)) : 0}%"></div><div class="lt-lbl">${LT_LABELS[i]}</div></div>`
@@ -1276,7 +1277,7 @@ function renderStats() {
     <div class="st-sec">SENASTE 18 VECKORNA</div>
     <div class="st-heatwrap"><div class="st-heat">${heat}</div></div>
     <div class="st-legend"><span>mindre</span><span class="st-d"></span><span class="st-d l1"></span><span class="st-d l2"></span><span class="st-d l3"></span><span class="st-d l4"></span><span>mer</span></div>
-    <div class="st-sec">LEITNER</div>
+    <div class="st-sec">LEITNER · ${ltTotal} kort</div>
     <div class="st-leitner">${leitner}</div>`;
 
   const segs = body.querySelector("#st-period");
@@ -3380,7 +3381,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v159";
+const APP_VERSION = "v160";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
@@ -3407,3 +3408,12 @@ if ("serviceWorker" in navigator) {
 }
 
 boot();
+
+// Fejda ut splashen när appen bootat (minsta visningstid så den inte bara blinkar)
+(function () {
+  const splash = document.getElementById("splash");
+  if (!splash) return;
+  const hide = () => { splash.classList.add("hide"); setTimeout(() => splash.remove(), 500); };
+  if (document.readyState === "complete") setTimeout(hide, 750);
+  else window.addEventListener("load", () => setTimeout(hide, 450));
+})();
