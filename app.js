@@ -1409,8 +1409,9 @@ function finishSession() {
   const cont = session ? { limit: session.continueLimit, kind: session.kind, lessonId: session.lessonId, forced: session.forced } : null;
 
   // Ring-rubrik = slumpad pepp (gröna knappen är alltid "Klar"). Ringen fylls efter
-  // andel av passets/dagens kort som klarats: gjorda kort / (gjorda + kvar).
-  const passCount = session ? (session.total || (session.cardSet ? session.cardSet.size : 0)) : 0;
+  // andel av rundans kort som klarats: gjorda totalt (runSeen, ackumuleras över
+  // "Fortsätt") / (gjorda + kvar). Nollställs när en ny runda startas (efter Klar).
+  const passCount = (runSeen && runSeen.size) || (session ? session.total : 0);
   const remaining = cont && cont.limit > 0 ? remainingForContinue(cont) : 0;
   const total = passCount + remaining;
   const pepEl = $("congrats-pep");
@@ -3381,7 +3382,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v161";
+const APP_VERSION = "v162";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
