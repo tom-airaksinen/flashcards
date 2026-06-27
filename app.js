@@ -3416,7 +3416,7 @@ boot();
 
 // Splash: visa minst SPLASH_MIN_MS (mätt från sidstart) och fejda sedan ut.
 // Ändra SPLASH_MIN_MS för annan visningstid.
-const SPLASH_MIN_MS = 2000;
+const SPLASH_MIN_MS = 1800;
 (function () {
   const splash = document.getElementById("splash");
   if (!splash) return;
