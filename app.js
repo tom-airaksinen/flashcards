@@ -870,17 +870,17 @@ function renderLessons() {
       const dueTag = d > 0 ? `<span class="due-tag">${d} dags</span>` : "";
       const nNew = l.cards.reduce((n, c) => n + (isNewCard(c) && !introducedToday.has(c.id) ? 1 : 0), 0);
       const newTag = nNew > 0 ? `<span class="new-tag">${nNew} nya</span>` : "";
+      const pauseIco = paused ? ` <span class="lesson-paused-ico" title="Pausad" aria-label="Pausad">⏸</span>` : "";
       return `<div class="row${paused ? " paused" : ""}" data-lesson="${l.id}">
-        <span class="row-title">${esc(l.name)}</span>
+        <span class="row-title"><span class="row-name">${esc(l.name)}</span>${pauseIco}</span>
         <span class="row-meta">${newTag}${dueTag}${l.cards.length} ord</span>
-        <button class="row-pause" data-pause="${l.id}" title="${paused ? "Återuppta lektionen" : "Pausa lektionen (tyst i Dags att öva)"}" aria-label="${paused ? "Återuppta" : "Pausa"}">${paused ? "▶" : "⏸"}</button>
         <button class="row-edit" data-edit="${l.id}" title="Öppna lektionen för att ändra">›</button>
       </div>`;
     })
     .join("");
   list.querySelectorAll(".row").forEach((row) => {
     row.addEventListener("click", (e) => {
-      if (e.target.closest(".row-edit") || e.target.closest(".row-pause")) return;
+      if (e.target.closest(".row-edit")) return;
       if (suppressLessonClick) return; // precis avslutat en drag-omordning
       startLessonSession(row.dataset.lesson); // pausad lektion går fortfarande att öva manuellt
     });
@@ -892,14 +892,6 @@ function renderLessons() {
       openEditor(btn.dataset.edit);
     });
   });
-  list.querySelectorAll(".row-pause").forEach((btn) => {
-    btn.addEventListener("pointerdown", (e) => e.stopPropagation());
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleLessonPause(btn.dataset.pause);
-      renderLessons();
-    });
-  });
 }
 
 // ---- Drag & drop-ordning av lektioner (långtryck) ----
@@ -907,7 +899,7 @@ let lessonDrag = null;
 let suppressLessonClick = false;
 
 function onLessonPointerDown(e, row, listEl) {
-  if (e.target.closest(".row-edit") || e.target.closest(".row-pause")) return;
+  if (e.target.closest(".row-edit")) return;
   if (e.button != null && e.button > 0) return;
   const state = { row, listEl, pointerId: e.pointerId, startY: e.clientY, active: false };
   lessonDrag = state;
@@ -2941,6 +2933,7 @@ function renderEditor() {
   activeScreen = "editor";
   show("editor");
   $("editor-title").textContent = lesson.name;
+  updatePauseToggle(lesson.id);
   const list = $("editor-list");
   if (!lesson.cards.length) {
     const lang = currentForeignLabel();
@@ -3127,6 +3120,21 @@ $("rename-lesson").onclick = async () => {
   if (!lesson) return;
   const name = await askName("Byt namn på lektion", lesson.name);
   if (name) renameLesson(currentSubject.id, lesson.id, name);
+};
+// Pausa/återuppta lektionen (▶ när pausad, ⏸ när aktiv) – uppe till höger i lektionen
+const togglePauseBtn = $("toggle-pause");
+function updatePauseToggle(lid) {
+  const paused = isLessonPaused(lid);
+  togglePauseBtn.textContent = paused ? "▶" : "⏸";
+  togglePauseBtn.title = paused ? "Återuppta lektionen" : "Pausa lektionen (tyst i Dags att öva)";
+  togglePauseBtn.classList.toggle("paused", paused);
+}
+togglePauseBtn.onclick = () => {
+  const lesson = getCurrentLesson();
+  if (!lesson) return;
+  const on = toggleLessonPause(lesson.id);
+  updatePauseToggle(lesson.id);
+  flash(on ? "Lektionen pausad – tyst i Dags att öva" : "Lektionen aktiverad igen", 2000);
 };
 $("delete-lesson").onclick = async () => {
   const lesson = getCurrentLesson();
@@ -3636,7 +3644,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v169";
+const APP_VERSION = "v170";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

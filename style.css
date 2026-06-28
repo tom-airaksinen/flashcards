@@ -1067,25 +1067,13 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
 }
 .row-edit:active { background: var(--accent); color: #fff; }
 
-/* Pausknapp på lektionsrad – tystar lektionen i "Dags att öva" */
-.row-pause {
-  background: var(--surface-2);
-  border: none;
-  color: var(--muted);
-  width: 34px; height: 34px;
-  border-radius: 9px;
-  font-size: 0.95rem;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex: none;
-}
-.row-pause:active { background: var(--accent); color: #fff; }
-/* Pausad lektion tonas ned (titel/taggar/antal), men knapparna förblir tydliga */
-.row.paused .row-title, .row.paused .row-meta { opacity: 0.45; }
-.row.paused .row-pause { color: var(--accent); }
+/* Pausad lektion: nedtonad rad + en diskret pausikon direkt efter namnet (ej knapp) */
+.row.paused .row-title, .row.paused .row-meta { opacity: 0.5; }
+.row.paused .row-title { display: flex; align-items: center; gap: 5px; }
+.row.paused .row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.lesson-paused-ico { flex: none; color: var(--muted); font-size: 0.8rem; line-height: 1; }
+/* Pausväljaren inne i lektionen: blir en tydlig play-knapp (accent) när lektionen är pausad */
+#toggle-pause.paused { color: var(--accent); }
 
 /* ---- Modal ---- */
 #modal-root {
