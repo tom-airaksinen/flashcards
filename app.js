@@ -1921,7 +1921,7 @@ async function fetchCommonsImages(term, offset) {
     .map((ii) => ({ thumb: ii.thumburl, full: ii.url }));
 }
 
-function openExplore(term) {
+function openExplore(term, onClose) {
   const lang = wikiLang();
   const initial = stripArticle(term, lang); // sök på grundordet (utan artikel)
   const m = openModal(`
@@ -1937,7 +1937,7 @@ function openExplore(term) {
     <div class="xpl-imgs" id="xpl-imgs"></div>
     <button class="xpl-more hidden" id="xpl-more">Ladda fler bilder</button>
     <button class="xpl-google" id="xpl-google">🔎 Öppna på Google</button>
-    <div class="modal-actions"><button class="btn-primary" id="m-ok">Stäng</button></div>`);
+    <div class="modal-actions"><button class="btn-primary" id="m-ok">Stäng</button></div>`, onClose);
   m.querySelector("#m-ok").onclick = closeModal;
   enableSheetDismiss(m); // svep ner kraftigt (från toppen) för att stänga
 
@@ -2032,7 +2032,8 @@ async function editCurrentCard() {
     lid = les && les.id;
   }
   if (!lid) return;
-  const res = await askWord(c.front, c.back, c.hint, true);
+  const subj = freshSubject();
+  const res = await askWord(c.front, c.back, c.hint, { allowDelete: true, explore: !!subjectLang(subj), lessons: subj.lessons, lessonId: lid });
   if (!res) return;
   if (res._delete) {
     const ok = await confirmDanger("Ta bort ord?", `"${c.front}" tas bort.`);
@@ -2053,7 +2054,11 @@ async function editCurrentCard() {
   c.front = res.front;
   c.back = res.back;
   c.hint = res.hint || null;
-  updateCard(currentSubject.id, lid, c.id, res.front, res.back, res.hint);
+  if (res.lessonId && res.lessonId !== lid) {
+    moveCard(currentSubject.id, lid, res.lessonId, c.id, res.front, res.back, res.hint);
+  } else {
+    updateCard(currentSubject.id, lid, c.id, res.front, res.back, res.hint);
+  }
   // uppdatera visat kort direkt
   const showFrontFirst = session.shownDir === "f2b";
   cardFrontText.textContent = showFrontFirst ? c.front : c.back;
@@ -2158,12 +2163,18 @@ card.addEventListener("pointercancel", () => {
 // =========================================================================
 const modalRoot = $("modal-root");
 
+let modalOnClose = null; // körs en gång när nuvarande modal stängs (oavsett väg: knapp/backdrop/svep)
+
 function closeModal() {
   modalRoot.classList.add("hidden");
   modalRoot.innerHTML = "";
+  const cb = modalOnClose;
+  modalOnClose = null;
+  if (cb) cb();
 }
 
-function openModal(innerHTML) {
+function openModal(innerHTML, onClose) {
+  modalOnClose = onClose || null;
   modalRoot.innerHTML = `<div class="modal-backdrop"></div><div class="modal">${innerHTML}</div>`;
   modalRoot.classList.remove("hidden");
   modalRoot.querySelector(".modal-backdrop").addEventListener("click", closeModal);
@@ -2385,31 +2396,57 @@ function askWords() {
   });
 }
 
-function askWord(front, back, hint, allowDelete) {
+// opts: { allowDelete, explore, lessons, lessonId }
+// Returnerar { front, back, hint, lessonId } | { _delete:true } | null
+function askWord(front, back, hint, opts = {}) {
+  const { allowDelete, explore, lessons, lessonId } = opts;
+  const showLesson = lessons && lessons.length > 1; // bara meningsfullt att flytta om det finns fler lektioner
   return new Promise((resolve) => {
-    const delBtn = allowDelete ? `<button class="modal-del" id="m-del" title="Ta bort ord" aria-label="Ta bort ord">${TRASH_ICON_SVG}</button>` : "";
-    const m = openModal(`
-      <div class="modal-head"><h3>Redigera ord</h3>${delBtn}</div>
+    // (åter)öppna redigeringen – samma promise lever vidare tills man Sparar/Avbryter/raderar.
+    const open = (f, b, h) => {
+      const globeBtn = explore ? `<button class="modal-globe" id="m-globe" title="Utforska ordet" aria-label="Utforska ordet">${GLOBE_ICON_SVG}</button>` : "";
+      const delBtn = allowDelete ? `<button class="modal-del" id="m-del" title="Ta bort ord" aria-label="Ta bort ord">${TRASH_ICON_SVG}</button>` : "";
+      const lessonBlock = showLesson ? `
+      <label>Lektion</label>
+      <div id="m-lesson-mount"></div>` : "";
+      const m = openModal(`
+      <div class="modal-head"><h3>Redigera ord</h3><div class="modal-head-btns">${globeBtn}${delBtn}</div></div>
       <label>Utländskt (framsida)</label>
-      <input type="text" id="m-front" value="${esc(front)}" autocomplete="off" autocapitalize="none" autocorrect="off" />
+      <input type="text" id="m-front" value="${esc(f)}" autocomplete="off" autocapitalize="none" autocorrect="off" />
       <label>Svenska (baksida)</label>
-      <input type="text" id="m-back" value="${esc(back)}" autocomplete="off" autocapitalize="none" autocorrect="off" />
+      <input type="text" id="m-back" value="${esc(b)}" autocomplete="off" autocapitalize="none" autocorrect="off" />
       <label>Minnesregel (valfritt)</label>
-      <textarea id="m-hint" rows="2" placeholder="t.ex. liknar engelskans …" autocapitalize="sentences">${esc(hint || "")}</textarea>
+      <textarea id="m-hint" rows="2" placeholder="t.ex. liknar engelskans …" autocapitalize="sentences">${esc(h || "")}</textarea>
+      ${lessonBlock}
       <div class="modal-actions">
         <button class="btn-secondary" id="m-cancel">Avbryt</button>
         <button class="btn-primary" id="m-ok">Spara</button>
       </div>`);
-    m.querySelector("#m-front").focus();
-    m.querySelector("#m-cancel").onclick = () => { closeModal(); resolve(null); };
-    if (allowDelete) m.querySelector("#m-del").onclick = () => { closeModal(); resolve({ _delete: true }); };
-    m.querySelector("#m-ok").onclick = () => {
-      const f = m.querySelector("#m-front").value.trim();
-      const b = m.querySelector("#m-back").value.trim();
-      const h = m.querySelector("#m-hint").value.trim();
-      closeModal();
-      resolve(f && b ? { front: f, back: b, hint: h } : null);
+      let lessonSel = null;
+      if (showLesson) {
+        lessonSel = buildSelect(lessons.map((l) => ({ value: l.id, label: l.name })), lessonId, null);
+        m.querySelector("#m-lesson-mount").appendChild(lessonSel.el);
+      }
+      const vals = () => ({
+        f: m.querySelector("#m-front").value.trim(),
+        b: m.querySelector("#m-back").value.trim(),
+        h: m.querySelector("#m-hint").value.trim(),
+      });
+      m.querySelector("#m-front").focus();
+      m.querySelector("#m-cancel").onclick = () => { closeModal(); resolve(null); };
+      if (allowDelete) m.querySelector("#m-del").onclick = () => { closeModal(); resolve({ _delete: true }); };
+      if (explore) m.querySelector("#m-globe").onclick = () => {
+        const v = vals(); // behåll ev. ändringar – återöppna med samma värden när Utforska stängs
+        openExplore(v.f || f, () => open(v.f, v.b, v.h));
+      };
+      m.querySelector("#m-ok").onclick = () => {
+        const v = vals();
+        const chosenLid = lessonSel ? lessonSel.value : lessonId;
+        closeModal();
+        resolve(v.f && v.b ? { front: v.f, back: v.b, hint: v.h, lessonId: chosenLid } : null);
+      };
     };
+    open(front, back, hint);
   });
 }
 
@@ -2520,6 +2557,8 @@ const COPY_ICON_SVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="non
 // Stiliserad papperskorg (currentColor → vit mot rött, muted/röd i modaler) – används överallt
 const TRASH_ICON_SVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5v2"/><path d="M6.5 7l.8 12a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9l.8-12"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>`;
 const CHECK_ICON_SVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>`;
+// Jordglob – samma motiv som globknappen på kortets baksida (Utforska)
+const GLOBE_ICON_SVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.6 3.9 5.7 3.9 9s-1.4 6.4-3.9 9c-2.5-2.6-3.9-5.7-3.9-9s1.4-6.4 3.9-9z"/></svg>`;
 
 // Tydlig, flytande bekräftelse längst ner
 function toast(msg, ms = 1700) {
@@ -2616,6 +2655,15 @@ function updateCard(sid, lid, cid, front, back, hint) {
 function removeCard(sid, lid, cid) {
   db.ref(`content/subjects/${sid}/lessons/${lid}/cards/${cid}`).remove().catch(writeError);
 }
+// Flytta ett kort till en annan lektion (atomiskt: lägg till nytt + ta bort gammalt).
+// SRS följer med automatiskt eftersom inlärningen nycklas på ordet, inte kort-id:t.
+function moveCard(sid, fromLid, toLid, cid, front, back, hint) {
+  const newKey = db.ref(`content/subjects/${sid}/lessons/${toLid}/cards`).push().key;
+  const updates = {};
+  updates[`content/subjects/${sid}/lessons/${toLid}/cards/${newKey}`] = { front, back, hint: hint || null, order: Date.now(), createdAt: TS };
+  updates[`content/subjects/${sid}/lessons/${fromLid}/cards/${cid}`] = null;
+  db.ref().update(updates).catch(writeError);
+}
 
 // =========================================================================
 //  CRUD-flöden (UI)
@@ -2698,6 +2746,12 @@ $("sort-btn").onclick = async () => {
   const choice = await actionSheet("Sortera", opts);
   if (choice) { editorSort = choice; renderEditor(); }
 };
+
+// Färskt ämnesobjekt ur synkade `content` (currentSubject kan peka på en gammal
+// kopia efter att Firebase ekat in t.ex. ett ändrat lektionsnamn).
+function freshSubject() {
+  return (currentSubject && content.find((s) => s.id === currentSubject.id)) || currentSubject;
+}
 
 function getCurrentLesson() {
   if (!currentSubject) return null;
@@ -2836,10 +2890,16 @@ async function editWord(cid) {
   if (!lesson) return;
   const c = lesson.cards.find((x) => x.id === cid);
   if (!c) return;
-  const res = await askWord(c.front, c.back, c.hint, true);
+  const subj = freshSubject();
+  const res = await askWord(c.front, c.back, c.hint, { allowDelete: true, explore: !!subjectLang(subj), lessons: subj.lessons, lessonId: lesson.id });
   if (!res) return;
   if (res._delete) { deleteWord(cid); return; }
-  c.hint = res.hint || null; updateCard(currentSubject.id, lesson.id, cid, res.front, res.back, res.hint);
+  c.hint = res.hint || null;
+  if (res.lessonId && res.lessonId !== lesson.id) {
+    moveCard(currentSubject.id, lesson.id, res.lessonId, cid, res.front, res.back, res.hint);
+  } else {
+    updateCard(currentSubject.id, lesson.id, cid, res.front, res.back, res.hint);
+  }
 }
 
 async function deleteWord(cid) {
@@ -2932,6 +2992,7 @@ function matchCase(src, target) {
 
 function openTranslate(defaultLessonId, prefill) {
   if (!currentSubject) return;
+  currentSubject = freshSubject(); // ta hänsyn till t.ex. nyligen ändrade lektionsnamn
   const fullLang = subjectLang(currentSubject);
   const foreignCode = fullLang.slice(0, 2);
   if (!foreignCode) {
@@ -3386,7 +3447,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v164";
+const APP_VERSION = "v165";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

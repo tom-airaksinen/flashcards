@@ -1073,6 +1073,12 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
   font-size: 1.15rem; cursor: pointer; padding: 4px 6px; border-radius: 8px; line-height: 1;
 }
 .modal-del:active { color: var(--fail); }
+.modal-head-btns { flex: none; display: flex; align-items: center; gap: 2px; }
+.modal-globe {
+  flex: none; background: none; border: none; color: var(--muted);
+  display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 4px 6px; border-radius: 8px; line-height: 1;
+}
+.modal-globe:active { color: var(--accent); }
 .modal label { font-size: 0.82rem; color: var(--muted); margin-bottom: -6px; }
 .modal input, .modal textarea {
   background: var(--surface-2);
