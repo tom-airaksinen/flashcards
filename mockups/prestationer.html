@@ -1,0 +1,165 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prestationer – mockup</title>
+<style>
+  :root{
+    --bg:#0d1426; --surface:#16203a; --surface-2:#1f2c4d; --text:#f2f4f8;
+    --muted:#9aa3b2; --accent:#5b8cff; --fire:#ff8a3d; --gold:#f4c542;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#070b16;color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;padding:24px 12px 60px}
+  .lead{max-width:760px;margin:0 auto 22px;color:var(--muted);font-size:.92rem;line-height:1.55}
+  .lead b{color:var(--text)}
+  .grid{display:flex;flex-wrap:wrap;gap:26px;justify-content:center;align-items:flex-start}
+  .phone{width:360px;background:var(--bg);border-radius:26px;padding:20px 16px;
+    box-shadow:0 14px 40px rgba(0,0,0,.5);border:1px solid #1c2742}
+  .vname{text-align:center;font-weight:700;font-size:1rem;margin:0 0 4px}
+  .vsub{text-align:center;color:var(--muted);font-size:.76rem;margin:0 auto 16px;max-width:300px;line-height:1.45}
+
+  /* shared section heading (matches app .st-sec) */
+  .st-sec{color:var(--muted);font-size:.7rem;font-weight:600;letter-spacing:.03em;margin:20px 2px 8px}
+
+  /* context: a faux Leitner bottom so it sits like in the app */
+  .ctx{opacity:.5;pointer-events:none}
+  .ctx .lt{display:flex;align-items:flex-end;gap:6px;height:64px}
+  .ctx .lt span{flex:1;border-radius:5px 5px 0 0;background:#5b8cff22}
+  .ctx .lt span:nth-child(1){height:90%;background:#e05a4f}
+  .ctx .lt span:nth-child(2){height:55%;background:#e0915a}
+  .ctx .lt span:nth-child(3){height:40%;background:#f4c542}
+  .ctx .lt span:nth-child(4){height:30%;background:#8fbf5a}
+  .ctx .lt span:nth-child(5){height:20%;background:#5bbf72}
+  .ctx .lt span:nth-child(6){height:14%;background:#5b8cff}
+
+  /* ============ Variant A — brickrad ============ */
+  .a-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .a-tile{background:var(--surface-2);border-radius:14px;padding:12px 4px 10px;text-align:center}
+  .a-tile .ico{font-size:1.5rem;line-height:1}
+  .a-tile .num{font-size:1.5rem;font-weight:800;margin-top:5px}
+  .a-tile .thr{font-size:.74rem;font-weight:700;color:var(--text);margin-top:4px}
+  .a-tile .unit{font-size:.6rem;color:var(--muted);letter-spacing:.02em}
+  .a-tile.fire .num{color:var(--fire)} .a-tile.gold .num{color:var(--gold)}
+  .a-tile.zero{opacity:.42}
+  .a-tile.zero .ico{filter:grayscale(1)}
+  .a-tile.zero .num{color:var(--muted)}
+
+  /* ============ Variant B — medaljlista ============ */
+  .b-item{display:flex;align-items:center;gap:12px;background:var(--surface-2);
+    border-radius:12px;padding:11px 13px;margin-bottom:8px}
+  .b-item .ico{font-size:1.5rem;width:30px;text-align:center}
+  .b-item .body{flex:1;min-width:0}
+  .b-item .title{font-size:.84rem;font-weight:600}
+  .b-item .bar{height:6px;border-radius:3px;background:#ffffff14;margin-top:6px;overflow:hidden}
+  .b-item .bar i{display:block;height:100%;border-radius:3px;background:var(--accent)}
+  .b-item .next{font-size:.64rem;color:var(--muted);margin-top:4px}
+  .b-item .cnt{font-size:1.45rem;font-weight:800;flex:none}
+  .b-item.gold .cnt{color:var(--gold)} .b-item.fire .cnt{color:var(--fire)}
+  .b-item.zero{opacity:.5} .b-item.zero .ico{filter:grayscale(1)} .b-item.zero .cnt{color:var(--muted)}
+
+  /* ============ Variant C — nivåbrickor ============ */
+  .c-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .c-card{background:var(--surface-2);border-radius:16px;padding:16px 12px;text-align:center;
+    border:1px solid #ffffff10}
+  .c-badge{width:78px;height:78px;border-radius:50%;margin:0 auto 8px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:0;position:relative}
+  .c-badge .ico{font-size:1.7rem;line-height:1}
+  .c-gold{background:radial-gradient(circle at 50% 35%,#f7d979,#caa02e);box-shadow:0 4px 14px #caa02e55}
+  .c-blue{background:radial-gradient(circle at 50% 35%,#7ea6ff,#3f63c8);box-shadow:0 4px 14px #3f63c855}
+  .c-tier{font-size:.62rem;font-weight:800;letter-spacing:.08em;color:#1a1300}
+  .c-card .lvl{font-size:.7rem;font-weight:700;color:var(--gold);letter-spacing:.05em}
+  .c-blueLvl{color:#8fb0ff!important}
+  .c-card .best{font-size:.95rem;font-weight:800;margin-top:6px}
+  .c-card .bestl{font-size:.6rem;color:var(--muted)}
+  .c-tally{display:flex;justify-content:center;gap:10px;margin-top:9px;flex-wrap:wrap}
+  .c-tally span{font-size:.64rem;color:var(--muted)}
+  .c-tally b{color:var(--text)}
+</style>
+
+<div class="lead">
+  <b>Prestationer – tre varianter.</b> Alla sitter längst ner i statistikvyn, direkt under
+  Leitner-sektionen (visad nedtonad här för sammanhang). Räknarna visas alltid, även på 0.
+  Siffrorna här är exempel: <b>12</b> dagar 100+, <b>5</b> dagar 150+, <b>1</b> dag 250+, <b>2</b> veckor 1000+.
+  Följer ämnesväljaren högst upp.
+</div>
+
+<div class="grid">
+
+  <!-- ============ A ============ -->
+  <div class="phone">
+    <div class="vname">A · Brickrad</div>
+    <div class="vsub">Rimmar med PASS/KORT-rutan. Kompakt, allt syns på en blick.</div>
+    <div class="ctx"><div class="st-sec">LEITNER · 1 220 kort</div><div class="lt"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+    <div class="st-sec">PRESTATIONER</div>
+    <div class="a-row">
+      <div class="a-tile fire"><div class="ico">🔥</div><div class="num">12</div><div class="thr">100+</div><div class="unit">dagar</div></div>
+      <div class="a-tile fire"><div class="ico">💪</div><div class="num">5</div><div class="thr">150+</div><div class="unit">dagar</div></div>
+      <div class="a-tile fire"><div class="ico">⚡</div><div class="num">1</div><div class="thr">250+</div><div class="unit">dagar</div></div>
+      <div class="a-tile gold"><div class="ico">🏆</div><div class="num">2</div><div class="thr">1000+</div><div class="unit">veckor</div></div>
+    </div>
+  </div>
+
+  <!-- ============ B ============ -->
+  <div class="phone">
+    <div class="vname">B · Medaljlista med progress</div>
+    <div class="vsub">En rad per nivå med progressbar mot nästa milstolpe. Mer pedagogiskt, tar mer höjd.</div>
+    <div class="ctx"><div class="st-sec">LEITNER · 1 220 kort</div><div class="lt"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+    <div class="st-sec">PRESTATIONER</div>
+    <div class="b-item fire">
+      <div class="ico">🔥</div>
+      <div class="body"><div class="title">100+ ord på en dag</div>
+        <div class="bar"><i style="width:80%"></i></div>
+        <div class="next">3 dagar till 150+-nivån</div></div>
+      <div class="cnt">12</div>
+    </div>
+    <div class="b-item fire">
+      <div class="ico">💪</div>
+      <div class="body"><div class="title">150+ ord på en dag</div>
+        <div class="bar"><i style="width:45%"></i></div>
+        <div class="next">på väg mot 250+</div></div>
+      <div class="cnt">5</div>
+    </div>
+    <div class="b-item fire">
+      <div class="ico">⚡</div>
+      <div class="body"><div class="title">250+ ord på en dag</div>
+        <div class="bar"><i style="width:15%"></i></div>
+        <div class="next">högsta dagsnivån</div></div>
+      <div class="cnt">1</div>
+    </div>
+    <div class="b-item gold">
+      <div class="ico">🏆</div>
+      <div class="body"><div class="title">1000+ ord på en vecka</div>
+        <div class="bar"><i style="width:60%;background:var(--gold)"></i></div>
+        <div class="next">bästa vecka: 1 240 ord</div></div>
+      <div class="cnt">2</div>
+    </div>
+  </div>
+
+  <!-- ============ C ============ -->
+  <div class="phone">
+    <div class="vname">C · Nivåbrickor (tiers)</div>
+    <div class="vsub">Brons→silver→guld vid 100/150/250. Mest Duolingo/Apple-likt, men mest yta.</div>
+    <div class="ctx"><div class="st-sec">LEITNER · 1 220 kort</div><div class="lt"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+    <div class="st-sec">PRESTATIONER</div>
+    <div class="c-wrap">
+      <div class="c-card">
+        <div class="c-badge c-gold"><div class="ico">⚡</div></div>
+        <div class="lvl">GULD · 250+</div>
+        <div class="best">312</div><div class="bestl">bästa dag (ord)</div>
+        <div class="c-tally"><span>100+ <b>×12</b></span><span>150+ <b>×5</b></span><span>250+ <b>×1</b></span></div>
+      </div>
+      <div class="c-card">
+        <div class="c-badge c-blue"><div class="ico">🏆</div></div>
+        <div class="lvl c-blueLvl">VECKA · 1000+</div>
+        <div class="best">1 240</div><div class="bestl">bästa vecka (ord)</div>
+        <div class="c-tally"><span>1000+ veckor <b>×2</b></span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="lead" style="margin-top:26px">
+  <b>Tom-läge (0):</b> i A blir brickan nedtonad/grå men syns, i B blir raden nedtonad,
+  i C visar brickan brons/lägsta nivån och tally:n <b>×0</b>.
+</div>
