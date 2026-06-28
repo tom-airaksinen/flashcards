@@ -280,7 +280,9 @@ function recordUnitFlip(card, dir) {
 
   recordAchv(user, sid, dayCount, weekCount); // livstidshistorik för prestationer
 
-  return { dayCount, weekCount, crossedDay: isNew && dayCount === DAILY_GOAL, crossedWeek: isNew && weekCount === WEEKLY_GOAL };
+  // dagströskel som passerades just nu (100/150/250) – för firande-toast
+  const dayCrossed = isNew && ACHV_DAY_TIERS.includes(dayCount) ? dayCount : 0;
+  return { dayCount, weekCount, dayCrossed, crossedWeek: isNew && weekCount === WEEKLY_GOAL };
 }
 
 // Läs dagens + veckans distinkta för ett ämne (read-only, för Klar-skärmen)
@@ -1717,7 +1719,7 @@ function answer(grade) {
   const flip = recordUnitFlip(c, dir);
   if (flip) {
     if (flip.crossedWeek) showAchievement("week");
-    else if (flip.crossedDay) showAchievement("day");
+    else if (flip.dayCrossed) showAchievement("day", flip.dayCrossed);
   }
   // Snapshot för shake-to-undo (innan någon mutation): kö, SRS-poster, graded-medlemskap.
   const gradedKey = c.id + ":" + dir;
@@ -2602,23 +2604,33 @@ function dismissAchievement() {
   el.classList.remove("show"); // glider tillbaka upp (transform-transition 0.55s)
   setTimeout(() => el.remove(), 600);
 }
-function showAchievement(kind) {
+// Dagsmilstolpar: emoji + pepptext per tröskel. 250 firas med konfetti (extra stort).
+const DAY_MILESTONES = {
+  100: { emoji: "💪", sub: "Bra jobbat!", confetti: false },
+  150: { emoji: "⚡️", sub: "Du är på rull!", confetti: false },
+  250: { emoji: "🥇", sub: "Helt magiskt!", confetti: true },
+};
+function showAchievement(kind, n) {
   dismissAchievement();
   const old = $("achievement"); if (old) old.remove();
   clearTimeout(achTimer);
+  const isWeek = kind === "week";
+  const ms = isWeek ? null : (DAY_MILESTONES[n] || DAY_MILESTONES[DAILY_GOAL]);
+  const confetti = isWeek || (ms && ms.confetti);
   const el = document.createElement("div");
   el.id = "achievement";
-  el.className = "ach-banner " + (kind === "week" ? "ach-week" : "ach-day");
-  if (kind === "week") {
+  el.className = "ach-banner " + (isWeek ? "ach-week" : "ach-day");
+  if (isWeek) {
     el.innerHTML = `<div class="ach-confetti"></div>
       <div class="ach-badge">🏆</div>
       <div class="ach-txt"><b>${WEEKLY_GOAL} olika kort denna vecka</b><span>Smått overkligt!</span></div>`;
   } else {
-    el.innerHTML = `<div class="ach-badge">💪</div>
-      <div class="ach-txt"><b>${DAILY_GOAL} olika kort idag!</b><span>Bra jobbat!</span></div>`;
+    el.innerHTML = `${confetti ? `<div class="ach-confetti"></div>` : ""}
+      <div class="ach-badge">${ms.emoji}</div>
+      <div class="ach-txt"><b>${n} olika kort idag!</b><span>${ms.sub}</span></div>`;
   }
   document.body.appendChild(el);
-  if (kind === "week") {
+  if (confetti) {
     const cf = el.querySelector(".ach-confetti");
     const cols = ["#fff", "#5b8cff", "#8fbf5a", "#ffd24a", "#ff8a3d"];
     for (let i = 0; i < 12; i++) {
@@ -3529,7 +3541,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v166";
+const APP_VERSION = "v167";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
