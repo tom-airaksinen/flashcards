@@ -369,6 +369,39 @@ function getAchievements(subjects) {
 }
 
 // =========================================================================
+//  Favoriter (stjärnord) & pausade lektioner – personligt per profil
+// =========================================================================
+// Favoriter nycklas per ORD (cardKeyOf) så en stjärna följer ordet mellan lektioner.
+// Paus lagras per lektions-id. Båda per profil, precis som SRS.
+const FAV_KEY = "flippa-fav-v1";        // profil → [ordnyckel]
+const PAUSED_KEY = "flippa-paused-v1";  // profil → [lektions-id]
+
+function favList() { return loadLS(FAV_KEY)[unitUser()] || []; }
+function isFavKey(key) { return favList().includes(key); }
+function isFav(card) { return card ? isFavKey(cardKeyOf(card)) : false; }
+function setFavKey(key, on) {
+  const o = loadLS(FAV_KEY), u = unitUser();
+  const set = new Set(o[u] || []);
+  on ? set.add(key) : set.delete(key);
+  o[u] = [...set];
+  localStorage.setItem(FAV_KEY, JSON.stringify(o));
+}
+function toggleFav(card) { const on = !isFav(card); setFavKey(cardKeyOf(card), on); return on; }
+
+function pausedList() { return loadLS(PAUSED_KEY)[unitUser()] || []; }
+function isLessonPaused(lid) { return pausedList().includes(lid); }
+function setLessonPaused(lid, on) {
+  const o = loadLS(PAUSED_KEY), u = unitUser();
+  const set = new Set(o[u] || []);
+  on ? set.add(lid) : set.delete(lid);
+  o[u] = [...set];
+  localStorage.setItem(PAUSED_KEY, JSON.stringify(o));
+}
+function toggleLessonPause(lid) { const on = !isLessonPaused(lid); setLessonPaused(lid, on); return on; }
+// Lektioner som "Dags att öva" får dra ifrån (pausade exkluderas helt ur autopasset)
+function activeLessons(subject) { return subject ? subject.lessons.filter((l) => !isLessonPaused(l.id)) : []; }
+
+// =========================================================================
 //  Daglig introduktion av nya ord (max 10/dag per ämne, proportionellt)
 // =========================================================================
 // "Dags att öva" tar in nya ord (låda 0) men släpper in högst 10 nya per dag
@@ -409,10 +442,11 @@ function todaysNewCards(subject) {
   let ledger;
   try { ledger = JSON.parse(localStorage.getItem(NEW_INTRO_KEY) || "{}"); } catch { ledger = {}; }
   const today = todayStr();
+  const lessons = activeLessons(subject); // pausade lektioner bidrar inte med nya ord
   let entry = ledger[subject.id];
   if (!entry || entry.date !== today) {
     // Bygg buckets per lektion av nya kort och fördela proportionellt.
-    const buckets = subject.lessons.map((l) => l.cards.filter(isNewCard));
+    const buckets = lessons.map((l) => l.cards.filter(isNewCard));
     const counts = buckets.map((b) => b.length);
     const totalNew = counts.reduce((a, b) => a + b, 0);
     const alloc = allocProportional(counts, Math.min(newPerDay(), totalNew));
@@ -430,7 +464,7 @@ function todaysNewCards(subject) {
   }
   const idSet = new Set(entry.ids);
   const out = [];
-  subject.lessons.forEach((l) =>
+  lessons.forEach((l) => // bara aktiva lektioner – pausade ord faller bort även om de valdes tidigare idag
     l.cards.forEach((c) => {
       if (idSet.has(c.id) && isNewCard(c)) out.push(c); // ej graderat ännu
     })
@@ -795,7 +829,7 @@ function renderLessons() {
   $("lessons-title").textContent = (subjectFlag(currentSubject) ? subjectFlag(currentSubject) + " " : "") + currentSubject.name;
 
   const dueBtn = $("due-btn");
-  const due = dueCountForLessons(currentSubject.lessons);
+  const due = dueCountForLessons(activeLessons(currentSubject)); // matchar passet: pausade räknas inte
   if (due > 0) {
     dueBtn.textContent = `⏰ Dags att öva (${due})`;
     dueBtn.classList.remove("hidden");
@@ -830,22 +864,24 @@ function renderLessons() {
   const introducedToday = new Set(todaysNewCards(currentSubject).map((c) => c.id));
   list.innerHTML = lessonsToShow
     .map((l) => {
+      const paused = isLessonPaused(l.id);
       const d = dueCountForLessons([l]);
       const dueTag = d > 0 ? `<span class="due-tag">${d} dags</span>` : "";
       const nNew = l.cards.reduce((n, c) => n + (isNewCard(c) && !introducedToday.has(c.id) ? 1 : 0), 0);
       const newTag = nNew > 0 ? `<span class="new-tag">${nNew} nya</span>` : "";
-      return `<div class="row" data-lesson="${l.id}">
+      return `<div class="row${paused ? " paused" : ""}" data-lesson="${l.id}">
         <span class="row-title">${esc(l.name)}</span>
         <span class="row-meta">${newTag}${dueTag}${l.cards.length} ord</span>
+        <button class="row-pause" data-pause="${l.id}" title="${paused ? "Återuppta lektionen" : "Pausa lektionen (tyst i Dags att öva)"}" aria-label="${paused ? "Återuppta" : "Pausa"}">${paused ? "▶" : "⏸"}</button>
         <button class="row-edit" data-edit="${l.id}" title="Öppna lektionen för att ändra">›</button>
       </div>`;
     })
     .join("");
   list.querySelectorAll(".row").forEach((row) => {
     row.addEventListener("click", (e) => {
-      if (e.target.classList.contains("row-edit")) return;
+      if (e.target.closest(".row-edit") || e.target.closest(".row-pause")) return;
       if (suppressLessonClick) return; // precis avslutat en drag-omordning
-      startLessonSession(row.dataset.lesson);
+      startLessonSession(row.dataset.lesson); // pausad lektion går fortfarande att öva manuellt
     });
     row.addEventListener("pointerdown", (e) => onLessonPointerDown(e, row, list));
   });
@@ -855,6 +891,14 @@ function renderLessons() {
       openEditor(btn.dataset.edit);
     });
   });
+  list.querySelectorAll(".row-pause").forEach((btn) => {
+    btn.addEventListener("pointerdown", (e) => e.stopPropagation());
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleLessonPause(btn.dataset.pause);
+      renderLessons();
+    });
+  });
 }
 
 // ---- Drag & drop-ordning av lektioner (långtryck) ----
@@ -862,7 +906,7 @@ let lessonDrag = null;
 let suppressLessonClick = false;
 
 function onLessonPointerDown(e, row, listEl) {
-  if (e.target.closest(".row-edit")) return;
+  if (e.target.closest(".row-edit") || e.target.closest(".row-pause")) return;
   if (e.button != null && e.button > 0) return;
   const state = { row, listEl, pointerId: e.pointerId, startY: e.clientY, active: false };
   lessonDrag = state;
@@ -1161,7 +1205,7 @@ function startDueSession(continuing = false) {
   const dirMode = dirSelect.value;
   const due = [];
   const inDue = new Set();
-  currentSubject.lessons.forEach((l) =>
+  activeLessons(currentSubject).forEach((l) => // hoppa över pausade lektioner
     l.cards.forEach((c) => {
       if (isDueNow(c, dirMode, now) && !runSeen.has(c.id)) {
         due.push(c); inDue.add(c.id);
@@ -1453,6 +1497,7 @@ function loadCard(forceDir) {
   updateStack();
   showSpeakSoon(300);
   editCardBtn.classList.remove("hidden");
+  updateStarBtn();
   updateHintBtn();
   if (handsfreeActive) { clearTimeout(hfLoadCardTimer); hfLoadCardTimer = setTimeout(() => { if (handsfreeActive) hfSpeakFront(); }, 400); }
 }
@@ -2106,6 +2151,23 @@ const editCardBtn = $("edit-card-btn");
 editCardBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
 editCardBtn.addEventListener("click", (e) => { e.stopPropagation(); editCurrentCard(); });
 
+// ---- Stjärnmärk ordet direkt från kortet (favorit, per profil) ----
+const starBtn = $("star-btn");
+function updateStarBtn() {
+  if (!session || !session.current) { starBtn.classList.add("hidden"); return; }
+  const fav = isFav(session.current);
+  starBtn.textContent = fav ? "★" : "☆";
+  starBtn.classList.toggle("on", fav);
+  starBtn.classList.remove("hidden");
+}
+starBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
+starBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (!session || !session.current) return;
+  toggleFav(session.current);
+  updateStarBtn();
+});
+
 async function editCurrentCard() {
   if (!session || !session.current) return;
   const c = session.current;
@@ -2167,7 +2229,7 @@ function setDrag(dx, dy) {
 function snapBack() {
   card.classList.add("snapping");
   card.style.transform = "";
-  card.addEventListener("transitionend", () => { card.classList.remove("snapping"); updateSpeakBtn(); updateGlobeBtn(); editCardBtn.classList.remove("hidden"); updateHintBtn(); }, { once: true });
+  card.addEventListener("transitionend", () => { card.classList.remove("snapping"); updateSpeakBtn(); updateGlobeBtn(); editCardBtn.classList.remove("hidden"); updateStarBtn(); updateHintBtn(); }, { once: true });
 }
 
 function flyOut(grade) {
@@ -2202,6 +2264,7 @@ card.addEventListener("pointerdown", (e) => {
   speakBtn.classList.add("hidden"); // dölj direkt när man tar i kortet
   globeBtn.classList.add("hidden");
   editCardBtn.classList.add("hidden");
+  starBtn.classList.add("hidden");
   hintBtn.classList.add("hidden");
   card.setPointerCapture(e.pointerId);
 });
@@ -2904,6 +2967,7 @@ function renderEditor() {
         const box = strengthBox(c);
         badge = `<span class="box-badge b${box}" title="${box === 0 ? "Aldrig tränat (ny)" : `Låda ${box} av 6 – ju högre desto starkare`}">${box === 0 ? "Ny" : box}</span>`;
       }
+      const fav = isFav(c);
       return `<div class="word-row" data-id="${c.id}">
         <button class="word-row-del" data-del="${c.id}" aria-label="Ta bort ord" title="Ta bort ord">${TRASH_ICON_SVG}</button>
         <div class="word-row-main">
@@ -2912,11 +2976,23 @@ function renderEditor() {
             <div class="word-back">${esc(c.back)}</div>
           </div>
           ${badge}
+          <button class="word-row-star${fav ? " on" : ""}" data-star="${c.id}" aria-label="Stjärnmärk" title="Stjärnmärk som favorit">${fav ? "★" : "☆"}</button>
         </div>
       </div>`;
     })
     .join("");
   list.querySelectorAll(".word-row").forEach((row) => attachSwipeDelete(row, row.dataset.id));
+  list.querySelectorAll(".word-row-star").forEach((btn) => {
+    btn.addEventListener("pointerdown", (e) => e.stopPropagation());
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const c = lesson.cards.find((x) => x.id === btn.dataset.star);
+      if (!c) return;
+      const on = toggleFav(c);
+      btn.textContent = on ? "★" : "☆";
+      btn.classList.toggle("on", on);
+    });
+  });
 }
 
 // Swipe-to-delete på ord i editorn: svep vänster på raden → röd papperskorg
@@ -3541,7 +3617,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v167";
+const APP_VERSION = "v168";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
