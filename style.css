@@ -1143,9 +1143,11 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
 .modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.55);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
+  /* Samma som kort/pass-väljaren: marinblå dimm (matchar bakgrunden, så ingen
+     färgrand i nedre safe area) + lätt blur. */
+  background: rgba(5,8,16,0.72);
+  -webkit-backdrop-filter: blur(1.5px);
+  backdrop-filter: blur(1.5px);
 }
 .modal {
   position: relative;
