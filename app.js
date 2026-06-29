@@ -243,9 +243,29 @@ function markFirstStudied(card) {
 // =========================================================================
 const UNITS_KEY = "flippa-units-v1";          // mängder per vecka: user → subject → datum → [cardKey|dir]
 const UNITCOUNT_KEY = "flippa-unitcount-v1";  // långsiktigt: user → subject → datum → antal (för heatmap)
-const DAILY_GOAL = 100;
-const WEEKLY_GOAL = 1000;
 function loadLS(key) { try { return JSON.parse(localStorage.getItem(key) || "{}") || {}; } catch { return {}; } }
+
+// Prestationsnivåer – inställbara per profil. Default: 100/150/250 ord/dag + 1000/vecka.
+// Allt (taggar, toaster, Klar-skärm, heatmapens guldprick) läser dessa live.
+const LEVELS_KEY = "flippa-levels-v1";
+const DEFAULT_DAY_TIERS = [100, 150, 250];
+const DEFAULT_WEEK_GOAL = 1000;
+function levels() {
+  const o = loadLS(LEVELS_KEY)[unitUser()] || {};
+  let days = Array.isArray(o.days) && o.days.length === 3 ? o.days.map((n) => parseInt(n, 10)) : null;
+  if (!days || days.some((n) => !Number.isFinite(n) || n < 1)) days = DEFAULT_DAY_TIERS.slice();
+  let week = parseInt(o.week, 10);
+  if (!Number.isFinite(week) || week < 1) week = DEFAULT_WEEK_GOAL;
+  return { days, week };
+}
+function dayTiers() { return levels().days; }
+function dailyGoal() { return levels().days[0]; } // lägsta dagsnivån = "dagens mål"
+function weeklyGoal() { return levels().week; }
+function saveLevels(days, week) {
+  const o = loadLS(LEVELS_KEY);
+  o[unitUser()] = { days, week };
+  localStorage.setItem(LEVELS_KEY, JSON.stringify(o));
+}
 function unitUser() { return currentUser || "guest"; }
 function ymdLocal(d) { return d.toLocaleDateString("sv-SE"); }
 // Datumsträngar mån–sön för veckan som innehåller idag
@@ -287,8 +307,8 @@ function recordUnitFlip(card, dir) {
   recordAchv(user, sid, dayCount, weekCount); // livstidshistorik för prestationer
 
   // dagströskel som passerades just nu (100/150/250) – för firande-toast
-  const dayCrossed = isNew && ACHV_DAY_TIERS.includes(dayCount) ? dayCount : 0;
-  return { dayCount, weekCount, dayCrossed, crossedWeek: isNew && weekCount === WEEKLY_GOAL };
+  const dayCrossed = isNew && dayTiers().includes(dayCount) ? dayCount : 0;
+  return { dayCount, weekCount, dayCrossed, crossedWeek: isNew && weekCount === weeklyGoal() };
 }
 
 // Läs dagens + veckans distinkta för ett ämne (read-only, för Klar-skärmen)
@@ -304,7 +324,7 @@ function goalDaysForScope(subjects) {
   const cu = loadLS(UNITCOUNT_KEY)[unitUser()] || {};
   const perDay = {};
   subjects.forEach((s) => { const cs = cu[s.id] || {}; Object.keys(cs).forEach((d) => { perDay[d] = (perDay[d] || 0) + cs[d]; }); });
-  const set = new Set(); Object.keys(perDay).forEach((d) => { if (perDay[d] >= DAILY_GOAL) set.add(d); });
+  const set = new Set(); Object.keys(perDay).forEach((d) => { if (perDay[d] >= dailyGoal()) set.add(d); });
   return set;
 }
 
@@ -315,7 +335,6 @@ function goalDaysForScope(subjects) {
 // { d:{datum:maxdagssiffra}, w:{ISO-vecka:maxveckosiffra} }. Skrivs vid varje flipp.
 const ACHV_KEY = "flippa-achv-v1";
 const ACHV_BACKFILL_KEY = "flippa-achv-backfilled-v1";
-const ACHV_DAY_TIERS = [100, 150, 250];
 
 // ISO-veckonyckel "ÅÅÅÅ-Www" (måndagsstart, torsdagen avgör år/vecka)
 function isoWeekKey(date) {
@@ -369,8 +388,45 @@ function getAchievements(subjects) {
   });
   const dayVals = Object.values(perDay), weekVals = Object.values(perWeek);
   return {
-    days: ACHV_DAY_TIERS.map((t) => dayVals.filter((v) => v >= t).length),
-    weeks: weekVals.filter((v) => v >= WEEKLY_GOAL).length,
+    days: dayTiers().map((t) => dayVals.filter((v) => v >= t).length),
+    weeks: weekVals.filter((v) => v >= weeklyGoal()).length,
+  };
+}
+
+// Popup: ställ in nivåtrösklarna (per profil). Räknarna är livstidshistorik så de
+// räknas bara om mot de nya trösklarna – ingen data går förlorad.
+function openLevelsModal() {
+  const lv = levels();
+  const icos = ["💪", "⚡️", "🥇"];
+  const dayRows = [0, 1, 2].map((i) =>
+    `<label class="lvl-row"><span>${icos[i]} Nivå ${i + 1}</span><input type="number" inputmode="numeric" min="1" id="lvl-d${i}" value="${lv.days[i]}" autocomplete="off" /></label>`).join("");
+  const m = openModal(`
+    <h3>Ändra nivåer</h3>
+    <p class="modal-hint">Antal ord (kort + riktning) som krävs för varje nivå. Gäller bara din profil och styr prestationsbrickorna, firande-toaster och Klar-skärmen.</p>
+    <div class="lvl-sec">PER DAG</div>
+    ${dayRows}
+    <div class="lvl-sec">PER VECKA</div>
+    <label class="lvl-row"><span>🏆 Vecka</span><input type="number" inputmode="numeric" min="1" id="lvl-w" value="${lv.week}" autocomplete="off" /></label>
+    <p class="lvl-reset-wrap"><button type="button" class="link-action" id="lvl-reset">Återställ till standard (${DEFAULT_DAY_TIERS.join("/")} · ${DEFAULT_WEEK_GOAL})</button></p>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="lvl-cancel">Avbryt</button>
+      <button class="btn-primary" id="lvl-save">Spara</button>
+    </div>`);
+  m.querySelector("#lvl-reset").onclick = () => {
+    [0, 1, 2].forEach((i) => { m.querySelector(`#lvl-d${i}`).value = DEFAULT_DAY_TIERS[i]; });
+    m.querySelector("#lvl-w").value = DEFAULT_WEEK_GOAL;
+  };
+  m.querySelector("#lvl-cancel").onclick = closeModal;
+  m.querySelector("#lvl-save").onclick = () => {
+    const d = [0, 1, 2].map((i) => parseInt(m.querySelector(`#lvl-d${i}`).value, 10));
+    const w = parseInt(m.querySelector("#lvl-w").value, 10);
+    if (d.some((n) => !Number.isFinite(n) || n < 1) || !Number.isFinite(w) || w < 1) {
+      toast("Fyll i positiva heltal på alla nivåer", 3500); return;
+    }
+    if (!(d[0] < d[1] && d[1] < d[2])) { toast("Dagsnivåerna måste öka: nivå 1 < 2 < 3", 4000); return; }
+    saveLevels(d, w);
+    closeModal();
+    renderStats(); // uppdatera trösklar + räknare direkt
   };
 }
 
@@ -1390,11 +1446,12 @@ function renderStats() {
 
   // Prestationer (livstid) – följer vald scope, precis som heatmap & Leitner
   const ach = getAchievements(ltSubjects);
+  const lv = levels();
   const achTiles = [
-    { ico: "💪", n: ach.days[0], thr: "100+", unit: "dagar" },
-    { ico: "⚡️", n: ach.days[1], thr: "150+", unit: "dagar" },
-    { ico: "🥇", n: ach.days[2], thr: "250+", unit: "dagar" },
-    { ico: "🏆", n: ach.weeks, thr: "1000+", unit: "veckor", gold: true },
+    { ico: "💪", n: ach.days[0], thr: `${lv.days[0]}+`, unit: "dagar" },
+    { ico: "⚡️", n: ach.days[1], thr: `${lv.days[1]}+`, unit: "dagar" },
+    { ico: "🥇", n: ach.days[2], thr: `${lv.days[2]}+`, unit: "dagar" },
+    { ico: "🏆", n: ach.weeks, thr: `${lv.week}+`, unit: "veckor", gold: true },
   ].map((t) =>
     `<div class="st-ach ${t.n ? (t.gold ? "gold" : "on") : "zero"}"><div class="ach-ico">${t.ico}</div><div class="ach-num">${t.n}</div><div class="ach-thr">${t.thr}</div><div class="ach-unit">${t.unit}</div></div>`
   ).join("");
@@ -1425,7 +1482,10 @@ function renderStats() {
     <div class="st-sec">LEITNER · ${ltTotal} kort</div>
     <div class="st-leitner">${leitner}</div>
     <div class="st-sec">PRESTATIONER</div>
-    <div class="st-achv">${achTiles}</div>`;
+    <div class="st-achv">${achTiles}</div>
+    <div class="st-achv-edit"><button type="button" class="link-action" id="achv-edit">Ändra nivåer</button></div>`;
+
+  body.querySelector("#achv-edit").onclick = openLevelsModal;
 
   const segs = body.querySelector("#st-period");
   const grid = body.querySelector("#st-grid");
@@ -1571,11 +1631,11 @@ function finishSession() {
   const goalsEl = $("congrats-goals");
   if (currentSubject) {
     const gp = getUnitProgress(currentSubject.id);
-    const dayDone = gp.dayCount >= DAILY_GOAL, weekDone = gp.weekCount >= WEEKLY_GOAL;
+    const dayDone = gp.dayCount >= dailyGoal(), weekDone = gp.weekCount >= weeklyGoal();
     if (dayDone || weekDone) {
       goalsEl.innerHTML =
-        `<div class="cg-goal ${dayDone ? "done" : ""}"><div class="cg-ico">💪</div><div class="cg-num">${dayDone ? `${gp.dayCount} ✓` : `${gp.dayCount} / ${DAILY_GOAL}`}</div><div class="cg-lbl">kort idag</div></div>` +
-        `<div class="cg-goal ${weekDone ? "done" : ""}"><div class="cg-ico">🏆</div><div class="cg-num">${weekDone ? `${gp.weekCount} ✓` : `${gp.weekCount} / ${WEEKLY_GOAL}`}</div><div class="cg-lbl">denna vecka</div></div>`;
+        `<div class="cg-goal ${dayDone ? "done" : ""}"><div class="cg-ico">💪</div><div class="cg-num">${dayDone ? `${gp.dayCount} ✓` : `${gp.dayCount} / ${dailyGoal()}`}</div><div class="cg-lbl">kort idag</div></div>` +
+        `<div class="cg-goal ${weekDone ? "done" : ""}"><div class="cg-ico">🏆</div><div class="cg-num">${weekDone ? `${gp.weekCount} ✓` : `${gp.weekCount} / ${weeklyGoal()}`}</div><div class="cg-lbl">denna vecka</div></div>`;
     } else {
       goalsEl.innerHTML = "";
     }
@@ -2701,18 +2761,20 @@ function dismissAchievement() {
   el.classList.remove("show"); // glider tillbaka upp (transform-transition 0.55s)
   setTimeout(() => el.remove(), 600);
 }
-// Dagsmilstolpar: emoji + pepptext per tröskel. 250 firas med konfetti (extra stort).
-const DAY_MILESTONES = {
-  100: { emoji: "💪", sub: "Bra jobbat!", confetti: false },
-  150: { emoji: "⚡️", sub: "Du är på rull!", confetti: false },
-  250: { emoji: "🥇", sub: "Helt magiskt!", confetti: true },
-};
+// Dagsmilstolpar per NIVÅ-index (inte fast antal, eftersom nivåerna är inställbara).
+// Översta nivån firas med konfetti (extra stort).
+const DAY_TIER_STYLE = [
+  { emoji: "💪", sub: "Bra jobbat!", confetti: false },
+  { emoji: "⚡️", sub: "Du är på rull!", confetti: false },
+  { emoji: "🥇", sub: "Helt magiskt!", confetti: true },
+];
 function showAchievement(kind, n) {
   dismissAchievement();
   const old = $("achievement"); if (old) old.remove();
   clearTimeout(achTimer);
   const isWeek = kind === "week";
-  const ms = isWeek ? null : (DAY_MILESTONES[n] || DAY_MILESTONES[DAILY_GOAL]);
+  const idx = isWeek ? -1 : dayTiers().indexOf(n); // vilken nivå (0/1/2) som passerades
+  const ms = isWeek ? null : (DAY_TIER_STYLE[idx] || DAY_TIER_STYLE[0]);
   const confetti = isWeek || (ms && ms.confetti);
   const el = document.createElement("div");
   el.id = "achievement";
@@ -2720,7 +2782,7 @@ function showAchievement(kind, n) {
   if (isWeek) {
     el.innerHTML = `<div class="ach-confetti"></div>
       <div class="ach-badge">🏆</div>
-      <div class="ach-txt"><b>${WEEKLY_GOAL} olika kort denna vecka</b><span>Smått overkligt!</span></div>`;
+      <div class="ach-txt"><b>${weeklyGoal()} olika kort denna vecka</b><span>Smått overkligt!</span></div>`;
   } else {
     el.innerHTML = `${confetti ? `<div class="ach-confetti"></div>` : ""}
       <div class="ach-badge">${ms.emoji}</div>
@@ -3812,7 +3874,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v176";
+const APP_VERSION = "v177";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

@@ -457,6 +457,14 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
 .st-ach.zero { opacity: 0.42; }
 .st-ach.zero .ach-ico { filter: grayscale(1); }
 .st-ach.zero .ach-num { color: var(--muted); }
+/* "Ändra nivåer"-länk under prestationsbrickorna */
+.st-achv-edit { text-align: center; margin-top: 10px; }
+/* Nivå-popup */
+.lvl-sec { color: var(--muted); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; margin: 14px 2px 8px; }
+.lvl-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.lvl-row span { font-size: 0.95rem; white-space: nowrap; }
+.modal .lvl-row input { width: 104px; flex: none; text-align: center; }
+.lvl-reset-wrap { margin: 14px 0 0; text-align: center; }
 .version-tag { margin-top: auto; text-align: center; color: var(--muted); font-size: 0.7rem; opacity: 0.55; padding: 10px 0 16px; }
 
 /* Riktning + kort per pass – pills med utfällbar väljare (lektionsskärmen) */
