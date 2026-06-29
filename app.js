@@ -1398,6 +1398,20 @@ function renderStats() {
   const end = addD(today, 6 - ((today.getDay() + 6) % 7)); // söndag i innevarande vecka
   // Dagar som nått 150 distinkta ord (inom vald scope) – guldmarkeras
   const goalSet = goalDaysForScope(statsScope === "all" ? mine : (scopeSubject ? [scopeSubject] : []));
+  // Dynamisk färgskala: kvartiler av de aktiva dagarna i de 18 visade veckorna, så
+  // skalan anpassar sig efter hur mycket man faktiskt pluggar (i st. för fasta nivåer).
+  const winVals = [];
+  for (let w = 17; w >= 0; w--) for (let dow = 0; dow < 7; dow++) {
+    const d = addD(end, -(w * 7) - (6 - dow));
+    if (d > today) continue;
+    const c = byDate[ymd(d)] ? byDate[ymd(d)].cards : 0;
+    if (c > 0) winVals.push(c);
+  }
+  winVals.sort((a, b) => a - b);
+  const qtl = (p) => winVals[Math.min(winVals.length - 1, Math.floor(p * winVals.length))];
+  const q1 = qtl(0.25), q2 = qtl(0.5), q3 = qtl(0.75);
+  const flat = new Set(winVals).size <= 1; // ingen spridning → enhetlig mellanton
+  const heatLevel = (c) => c <= 0 ? "" : flat ? " l3" : c >= q3 ? " l4" : c >= q2 ? " l3" : c >= q1 ? " l2" : " l1";
   let heat = "";
   for (let w = 17; w >= 0; w--) {
     let col = "";
@@ -1406,7 +1420,7 @@ function renderStats() {
       const c = byDate[ymd(d)] ? byDate[ymd(d)].cards : 0;
       let cls = "st-d";
       if (d > today) cls += " fut";
-      else if (c) cls += c >= 52 ? " l4" : c >= 32 ? " l3" : c >= 12 ? " l2" : " l1";
+      else if (c) cls += heatLevel(c);
       if (ymd(d) === ymd(today)) cls += " today";
       if (goalSet.has(ymd(d)) && d <= today) cls += " goal";
       col += `<div class="${cls}"></div>`;
@@ -3874,7 +3888,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v177";
+const APP_VERSION = "v178";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
