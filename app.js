@@ -1505,7 +1505,6 @@ function loadCard(forceDir) {
   updateProgress();
   updateStack();
   showSpeakSoon(300);
-  editCardBtn.classList.remove("hidden");
   updateHintBtn();
   if (handsfreeActive) { clearTimeout(hfLoadCardTimer); hfLoadCardTimer = setTimeout(() => { if (handsfreeActive) hfSpeakFront(); }, 400); }
 }
@@ -1901,7 +1900,6 @@ function onMotion(e) {
 //  Uttal (Web Speech API)
 // =========================================================================
 const speakBtn = $("speak-btn");
-const globeBtn = $("globe-btn");
 
 // Autoläge: läs upp automatiskt varje gång den utländska sidan visas
 const AUTO_SPEAK_KEY = "flippa-autospeak";
@@ -1947,20 +1945,14 @@ function updateSpeakBtn() {
 }
 
 // Jordgloben visas så fort den UTLÄNDSKA sidan syns (kräver ingen röst, till skillnad
-// mot högtalaren) – uppslag fungerar för alla språk.
-function updateGlobeBtn() {
-  globeBtn.classList.toggle("hidden", !(foreignVisible() && !!subjectLang(currentSubject)));
-}
-
 // Dölj knappen direkt och visa den först när animationen (flipp/emerge) är klar
 function showSpeakSoon(delay) {
   speakBtn.classList.add("hidden");
-  globeBtn.classList.add("hidden");
-  starBtn.classList.add("hidden");
+  cardMenuBtn.classList.add("hidden");
+  closeCardMenu();
   setTimeout(() => {
     updateSpeakBtn();
-    updateGlobeBtn();
-    updateStarBtn();
+    updateCardMenuBtn();
     // autoläge: läs upp så fort den utländska sidan blir synlig
     if (autoSpeak && !handsfreeActive && session && session.current && foreignVisible() && hasVoiceFor(subjectLang(currentSubject))) {
       speak(session.current.front, subjectLang(currentSubject));
@@ -1984,15 +1976,9 @@ function speakCurrent() {
 }
 speakBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
 speakBtn.addEventListener("click", (e) => { e.stopPropagation(); speakCurrent(); });
-globeBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
-globeBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  if (session && session.current) googleAiExplore(session.current.front);
-  // OBS: openExplore() (Wiktionary/Wikipedia + bilder) finns kvar oförändrad – testar
-  // tills vidare en direkt Google AI-sökning istället. Byt tillbaka raden ovan vid behov.
-});
 
 // Direkt Google-sökning i AI-läge (udm=50) på det utländska ordet, öppnas i webview.
+// (Anropas från "Slå upp" i kortets …-meny. openExplore finns kvar oförändrad.)
 function googleAiExplore(term) {
   const label = subjectLang(currentSubject) ? langLabel(subjectLang(currentSubject)).toLowerCase() : "";
   const onLang = label ? ` på ${label}` : "";
@@ -2166,27 +2152,37 @@ if ("speechSynthesis" in window) {
   speechSynthesis.onvoiceschanged = () => { speechSynthesis.getVoices(); updateSpeakBtn(); };
 }
 
-// ---- Redigera ordet direkt från kortet ----
-const editCardBtn = $("edit-card-btn");
-editCardBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
-editCardBtn.addEventListener("click", (e) => { e.stopPropagation(); editCurrentCard(); });
-
-// ---- Stjärnmärk ordet direkt från kortet (favorit, per profil) ----
-const starBtn = $("star-btn");
-function updateStarBtn() {
-  // Visas bara när den utländska sidan syns (nere till höger på kortet)
-  if (!session || !session.current || !foreignVisible()) { starBtn.classList.add("hidden"); return; }
-  const fav = isFav(session.current);
-  starBtn.textContent = fav ? "★" : "☆";
-  starBtn.classList.toggle("on", fav);
-  starBtn.classList.remove("hidden");
-}
-starBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
-starBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
+// ---- "…"-meny på utländska sidan: Redigera / Stjärnmärk / Slå upp ----
+const cardMenuBtn = $("card-menu-btn");
+const cardMenu = $("card-menu");
+let cardMenuOpen = false;
+function closeCardMenu() { cardMenuOpen = false; cardMenu.classList.add("hidden"); }
+function openCardMenu() {
   if (!session || !session.current) return;
-  toggleFav(session.current);
-  updateStarBtn();
+  const fav = isFav(session.current);
+  $("cmi-star-ico").textContent = fav ? "★" : "☆";
+  $("cmi-star-ico").classList.toggle("on", fav);
+  $("cmi-star-lbl").textContent = fav ? "Stjärnmärkt" : "Stjärnmärk";
+  cardMenu.classList.remove("hidden");
+  cardMenuOpen = true;
+}
+// Visas bara när den utländska sidan syns (uppe till vänster på kortet)
+function updateCardMenuBtn() {
+  if (!session || !session.current || !foreignVisible()) { cardMenuBtn.classList.add("hidden"); closeCardMenu(); return; }
+  cardMenuBtn.classList.remove("hidden");
+}
+cardMenuBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
+cardMenuBtn.addEventListener("click", (e) => { e.stopPropagation(); cardMenuOpen ? closeCardMenu() : openCardMenu(); });
+cardMenu.addEventListener("pointerdown", (e) => e.stopPropagation());
+cardMenu.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const item = e.target.closest(".card-menu-item"); if (!item) return;
+  const act = item.dataset.act;
+  closeCardMenu();
+  if (!session || !session.current) return;
+  if (act === "edit") editCurrentCard();
+  else if (act === "star") { const on = toggleFav(session.current); flash(on ? "⭐ Stjärnmärkt" : "Stjärna borttagen", 1800); }
+  else if (act === "lookup") googleAiExplore(session.current.front);
 });
 
 async function editCurrentCard() {
@@ -2250,7 +2246,7 @@ function setDrag(dx, dy) {
 function snapBack() {
   card.classList.add("snapping");
   card.style.transform = "";
-  card.addEventListener("transitionend", () => { card.classList.remove("snapping"); updateSpeakBtn(); updateGlobeBtn(); editCardBtn.classList.remove("hidden"); updateStarBtn(); updateHintBtn(); }, { once: true });
+  card.addEventListener("transitionend", () => { card.classList.remove("snapping"); updateSpeakBtn(); updateCardMenuBtn(); updateHintBtn(); }, { once: true });
 }
 
 function flyOut(grade) {
@@ -2271,6 +2267,7 @@ function flyOut(grade) {
 
 card.addEventListener("click", () => {
   if (didSwipe || animating) return;
+  if (cardMenuOpen) { closeCardMenu(); return; } // ett tryck utanför menyn stänger den (utan att vända kortet)
   card.classList.toggle("flipped");
   showSpeakSoon(460);
   updateHintBtn(); // dölj lampan när svaret visas, visa igen om man vänder tillbaka
@@ -2283,9 +2280,8 @@ card.addEventListener("pointerdown", (e) => {
   dragging = true;
   didSwipe = false;
   speakBtn.classList.add("hidden"); // dölj direkt när man tar i kortet
-  globeBtn.classList.add("hidden");
-  editCardBtn.classList.add("hidden");
-  starBtn.classList.add("hidden");
+  cardMenuBtn.classList.add("hidden");
+  closeCardMenu();
   hintBtn.classList.add("hidden");
   card.setPointerCapture(e.pointerId);
 });
@@ -3799,7 +3795,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v172";
+const APP_VERSION = "v173";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

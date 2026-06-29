@@ -621,36 +621,17 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
 }
 #speak-btn:active { background: var(--accent); }
 
-#edit-card-btn {
+/* "…"-meny uppe till vänster (utländska sidan): Redigera / Stjärnmärk / Slå upp */
+#card-menu-btn {
   position: absolute;
   top: 12px; left: 12px;
-  z-index: 10;
+  z-index: 11;
   width: 40px; height: 40px;
   border-radius: 50%;
   border: none;
   background: rgba(0,0,0,0.35);
   color: #fff;
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(4px);
-}
-#edit-card-btn:active { background: var(--accent); }
-#speak-btn.auto { background: var(--accent); color: #fff; box-shadow: 0 0 0 3px rgba(91,140,255,0.45); }
-
-/* Stjärnmärk ordet (favorit) – nere till höger, bara på utländska sidan */
-#star-btn {
-  position: absolute;
-  bottom: 12px; right: 12px;
-  z-index: 10;
-  width: 46px; height: 46px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0,0,0,0.35);
-  color: #fff;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   line-height: 1;
   cursor: pointer;
   display: flex;
@@ -659,8 +640,38 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
   backdrop-filter: blur(4px);
   animation: speak-fade 0.2s ease-out;
 }
-#star-btn.on { color: var(--gold); }
-#star-btn:active { background: var(--accent); }
+#card-menu-btn:active { background: var(--accent); }
+#speak-btn.auto { background: var(--accent); color: #fff; box-shadow: 0 0 0 3px rgba(91,140,255,0.45); }
+
+.card-menu {
+  position: absolute;
+  top: 58px; left: 12px;
+  z-index: 12;
+  background: var(--surface);
+  border: 1px solid #2c3c63;
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 184px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.card-menu-item {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%;
+  background: none; border: none; cursor: pointer;
+  color: var(--text);
+  font-size: 0.95rem;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+.card-menu-item:active { background: var(--surface-2); }
+.cmi-ico {
+  flex: none; width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.15rem; line-height: 1; color: var(--muted);
+}
+.cmi-ico.on { color: var(--gold); }
 
 /* Glödlampa: visa BARA minnesregeln (ledtråd) utan att avslöja svaret */
 #hint-btn {

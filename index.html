@@ -157,11 +157,14 @@
 
     <main class="card-area">
       <div class="card-stack">
-        <button id="edit-card-btn" class="hidden" title="Redigera ordet">✎</button>
-        <button id="star-btn" class="hidden" title="Stjärnmärk som favorit" aria-label="Stjärnmärk som favorit">☆</button>
+        <button id="card-menu-btn" class="hidden" title="Mer" aria-label="Mer">⋯</button>
+        <div id="card-menu" class="card-menu hidden">
+          <button class="card-menu-item" data-act="edit"><span class="cmi-ico">✎</span><span>Redigera</span></button>
+          <button class="card-menu-item" data-act="star"><span class="cmi-ico" id="cmi-star-ico">☆</span><span id="cmi-star-lbl">Stjärnmärk</span></button>
+          <button class="card-menu-item" data-act="lookup"><span class="cmi-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.6 3.9 5.7 3.9 9s-1.4 6.4-3.9 9c-2.5-2.6-3.9-5.7-3.9-9s1.4-6.4 3.9-9z"/></svg></span><span>Slå upp</span></button>
+        </div>
         <button id="speak-btn" class="hidden" title="Uttala">🔊</button>
         <button id="hint-btn" class="hidden" title="Visa ledtråd">💡</button>
-        <button id="globe-btn" class="hidden" title="Utforska ordet" aria-label="Utforska ordet"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.6 3.9 5.7 3.9 9s-1.4 6.4-3.9 9c-2.5-2.6-3.9-5.7-3.9-9s1.4-6.4 3.9-9z"/></svg></button>
         <div id="card" class="card">
           <div class="card-inner">
             <div class="card-front" id="card-front">
