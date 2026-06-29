@@ -42,10 +42,16 @@ const USERS = [
 ];
 const USER_KEY = "flippa-user";
 let currentUser = localStorage.getItem(USER_KEY) || null; // null = ingen vald (ny enhet)
+applyTheme(); // sätt ev. rosa tema direkt (innan splash/render) om Hedvig är vald
 function userName(id) { return (USERS.find((u) => u.id === id) || {}).name || ""; }
+// Rosa tema gäller bara Hedvigs profil (sätter klass på <html> → CSS-variablerna byts)
+function applyTheme() {
+  document.documentElement.classList.toggle("theme-rosa", currentUser === "hedvig");
+}
 function setUser(id) {
   currentUser = id;
   if (id) localStorage.setItem(USER_KEY, id); else localStorage.removeItem(USER_KEY);
+  applyTheme();
   renderSubjects();
 }
 // Engångsfix: ge äldre områden (utan owner) en ägare efter namn. Skrivs till Firebase
@@ -3806,7 +3812,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v174";
+const APP_VERSION = "v175";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 

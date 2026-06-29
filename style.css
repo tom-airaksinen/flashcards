@@ -25,7 +25,36 @@ input, textarea {
   --easy: #f4c542;
   --fire: #ff8a3d;
   --gold: #f4c542;
+  --line: #2c3c63; /* strukturkant (väljare, modaler, flikfält) */
 }
+
+/* Rosa tema – gäller bara Hedvigs profil (klass sätts på <html> i applyTheme) */
+:root.theme-rosa {
+  --bg: #ffd9e9;
+  --surface: #ffffff;
+  --surface-2: #f7bdd8;
+  --text: #4a2236;
+  --muted: #a85f7e;
+  --accent: #ff3d8f;
+  --good: #52b96a;
+  --fail: #e0608a;
+  --easy: #ff4d97;   /* "Dags att öva"-knapp + dags-tagg → rosa */
+  --fire: #ff2e86;   /* streak-siffran */
+  --gold: #d98a26;
+  --line: #f0aecd;
+}
+/* Ljus bakgrund kräver vit text på de rosa chiparna + ljusa kort-lager */
+:root.theme-rosa #due-btn { color: #fff; }
+:root.theme-rosa .due-tag { color: #fff; }
+:root.theme-rosa .st-period { background: var(--surface-2); }
+:root.theme-rosa .card-stack::before { background: #f7bdd8; }
+:root.theme-rosa .card-stack::after { background: #ffc7e0; }
+/* Heatmap-intensiteten är hårdkodat blå i grundtemat → rosa här */
+:root.theme-rosa .st-d.l1 { background: rgba(255,61,143,0.30); }
+:root.theme-rosa .st-d.l2 { background: rgba(255,61,143,0.55); }
+:root.theme-rosa .st-d.l3 { background: rgba(255,61,143,0.80); }
+/* Leitners starkaste låda är hårdkodat blå → rosa (övriga behåller styrkeskalan) */
+:root.theme-rosa .lt-bar.b6 { background: var(--accent); }
 
 html, body {
   height: 100%;
@@ -135,7 +164,7 @@ body {
 .help-swipes b { color: var(--text); }
 .help-tip { background: var(--surface); border-radius: 10px; padding: 10px 12px; }
 .help-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin: 4px 0 10px; }
-.help-table th, .help-table td { border: 1px solid #243352; padding: 6px 10px; text-align: left; color: var(--muted); }
+.help-table th, .help-table td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; color: var(--muted); }
 .help-table th { color: var(--text); font-weight: 600; }
 
 /* Bottenflikar – diskret: samma bakgrund som sidan, bara en tunn avdelare.
@@ -145,7 +174,7 @@ body {
 #tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
   display: flex; justify-content: center; gap: 8px;
-  background: var(--bg); border-top: 1px solid #1c2742;
+  background: var(--bg); border-top: 1px solid var(--line);
   /* --sab = latchat safe-area-bottom (växer bara) → ingen höjdglidning när iOS
      avslöjar insetet efter cold launch. Fallback till live env innan latchning. */
   padding-bottom: max(2px, calc(var(--sab, env(safe-area-inset-bottom)) - 30px));
@@ -483,7 +512,7 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
   position: relative; /* positioneringskontext för glidande thumb */
   gap: 4px;
   background: #0a1020;
-  border: 1px solid #1c2742;
+  border: 1px solid var(--line);
   border-radius: 11px;
   padding: 4px;
   margin: 10px 0 12px;
@@ -519,7 +548,7 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
 .opt-note { color: var(--muted); font-size: 0.72rem; margin: 8px 2px 0; line-height: 1.4; }
 .opt-toggle-row {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  margin-top: 14px; padding-top: 12px; border-top: 1px solid #243352;
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line);
   font-size: 0.92rem; font-weight: 600;
 }
 
@@ -648,7 +677,7 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
   top: 58px; left: 12px;
   z-index: 12;
   background: var(--surface);
-  border: 1px solid #2c3c63;
+  border: 1px solid var(--line);
   border-radius: 12px;
   padding: 6px;
   min-width: 184px;
@@ -714,7 +743,7 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
 .xpl-search { display: flex; gap: 8px; align-items: center; }
 .xpl-search input { flex: 1; }
 .xpl-go {
-  flex: none; width: 44px; height: 44px; border-radius: 10px; border: 1px solid #2c3c63;
+  flex: none; width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line);
   background: var(--surface-2); color: var(--text); font-size: 1.1rem; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
@@ -979,7 +1008,7 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
   width: 100%;
   box-sizing: border-box;
   background: var(--surface-2);
-  border: 1px solid #2c3c63;
+  border: 1px solid var(--line);
   border-radius: 10px;
   color: var(--text);
   padding: 11px 36px 11px 14px;
@@ -1148,7 +1177,7 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
 .modal label { font-size: 0.82rem; color: var(--muted); margin-bottom: -6px; }
 .modal input, .modal textarea {
   background: var(--surface-2);
-  border: 1px solid #2c3c63;
+  border: 1px solid var(--line);
   border-radius: 10px;
   color: var(--text);
   padding: 12px;
@@ -1167,7 +1196,7 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
   justify-content: space-between;
   gap: 10px;
   background: var(--surface-2);
-  border: 1px solid #2c3c63;
+  border: 1px solid var(--line);
   border-radius: 10px;
   color: var(--text);
   padding: 12px 14px;
@@ -1181,7 +1210,7 @@ body.tabbar-on #app-main { padding-bottom: var(--tabbar-h, 56px); }
    (ingen overlay/blur). Stängt = hopfälld, öppet = .open. */
 .cs-list {
   background: var(--surface-2);
-  border: 0 solid #2c3c63;
+  border: 0 solid var(--line);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
