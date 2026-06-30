@@ -2270,13 +2270,13 @@ function openCardMenu() {
   cardMenu.classList.remove("hidden");
   cardMenuOpen = true;
 }
-// Visas bara när den utländska sidan syns (uppe till vänster på kortet).
-// Den osynliga globknappen nere till vänster följer med (samma villkor).
+// ⋯-menyn (uppe till vänster) visas på BÅDA sidor av kortet. Den osynliga
+// globgenvägen nere till vänster behålls bara på den utländska sidan.
 function updateCardMenuBtn() {
-  const show = !!(session && session.current && foreignVisible());
-  cardMenuBtn.classList.toggle("hidden", !show);
-  globeBtn.classList.toggle("hidden", !show);
-  if (!show) closeCardMenu();
+  const hasCard = !!(session && session.current);
+  cardMenuBtn.classList.toggle("hidden", !hasCard);
+  globeBtn.classList.toggle("hidden", !(hasCard && foreignVisible()));
+  if (!hasCard) closeCardMenu();
 }
 globeBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
 globeBtn.addEventListener("click", (e) => {
@@ -3922,7 +3922,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v182";
+const APP_VERSION = "v183";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
