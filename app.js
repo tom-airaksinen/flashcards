@@ -2284,7 +2284,19 @@ globeBtn.addEventListener("click", (e) => {
   if (session && session.current) googleAiExplore(session.current.front);
 });
 cardMenuBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
-cardMenuBtn.addEventListener("click", (e) => { e.stopPropagation(); cardMenuOpen ? closeCardMenu() : openCardMenu(); });
+let cardMenuLastTap = 0;
+cardMenuBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const now = Date.now();
+  if (now - cardMenuLastTap < 300) { // dubbeltapp → rakt in i redigeraläge
+    cardMenuLastTap = 0;
+    closeCardMenu();
+    editCurrentCard();
+    return;
+  }
+  cardMenuLastTap = now;
+  cardMenuOpen ? closeCardMenu() : openCardMenu();
+});
 cardMenu.addEventListener("pointerdown", (e) => e.stopPropagation());
 cardMenu.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -2689,11 +2701,11 @@ function askWord(front, back, hint, opts = {}) {
       const m = openModal(`
       <div class="modal-head"><h3>Redigera ord</h3><div class="modal-head-btns">${globeBtn}${delBtn}</div></div>
       <label>Utländskt (framsida)</label>
-      <input type="text" id="m-front" value="${esc(f)}" autocomplete="off" autocapitalize="none" autocorrect="off" />
+      <input type="text" id="m-front" value="${esc(f)}" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" />
       <label>Svenska (baksida)</label>
-      <input type="text" id="m-back" value="${esc(b)}" autocomplete="off" autocapitalize="none" autocorrect="off" />
+      <input type="text" id="m-back" value="${esc(b)}" autocomplete="off" autocapitalize="none" lang="sv" spellcheck="true" />
       <label>Minnesregel (valfritt)</label>
-      <textarea id="m-hint" rows="2" placeholder="t.ex. liknar engelskans …" autocapitalize="sentences">${esc(h || "")}</textarea>
+      <textarea id="m-hint" rows="2" placeholder="t.ex. liknar engelskans …" autocapitalize="sentences" lang="sv" spellcheck="true">${esc(h || "")}</textarea>
       ${lessonBlock}
       <div class="modal-actions">
         <button class="btn-secondary" id="m-cancel">Avbryt</button>
@@ -3910,7 +3922,7 @@ function hfStartListening(resetTimer) {
 // =========================================================================
 //  PWA + start
 // =========================================================================
-const APP_VERSION = "v181";
+const APP_VERSION = "v182";
 const versionTag = $("version-tag"); // kan saknas om en gammal cachad index.html serveras
 if (versionTag) versionTag.textContent = "Flippa " + APP_VERSION;
 
